@@ -1,0 +1,5 @@
+services:
+  test:
+    build: .
+    ports:
+      - "13000:13000"
