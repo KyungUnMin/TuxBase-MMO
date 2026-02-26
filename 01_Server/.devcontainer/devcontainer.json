@@ -1,0 +1,27 @@
+{
+    "name": "TuxBase MMO Dev Environment",
+    "dockerComposeFile": "compose.yml",
+    "service": "mainserver",
+    "workspaceFolder": "/root/src",
+    "initializeCommand": "docker compose -f .devcontainer/compose.yml build",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "llvm-vs-code-extensions.vscode-clangd",
+                "shardulm94.trailing-spaces",
+                "msfukui.eof-mark",
+                "eamodio.gitlens"
+            ],
+            "settings": {
+                "editor.formatOnSave": false,
+                "C_Cpp.intelliSenseEngine": "disabled",
+                "clangd.arguments": [
+                    "--compile-commands-dir=Build/Linux",
+                    "--background-index"
+                ]
+            }
+        }
+    }
+}

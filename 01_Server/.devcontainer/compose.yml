@@ -1,9 +1,9 @@
 services:
-  mytestserver:
+  mainserver:
     build: .
     ports:
       - "13000:13000"
     volumes:
-      - ../03_Src:/root/src
+      - ../Src:/root/src
     tty: true
     stdin_open: true
