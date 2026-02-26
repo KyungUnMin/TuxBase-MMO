@@ -31,9 +31,9 @@ target_include_directories(ServerEngine
 # ─────────────────────────────────────────────
 # Boost 의존성
 # ─────────────────────────────────────────────
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED)
 
 target_link_libraries(ServerEngine
     PUBLIC
-        Boost::system
+        Boost::headers
 )

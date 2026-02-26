@@ -3,13 +3,6 @@
   "version-string": "0.1.0",
   "description": "TuxBase-MMO Server - MapleStory-style MMORPG",
   "dependencies": [
-    {
-      "name": "boost-asio",
-      "version>=": "1.87.0"
-    },
-    {
-      "name": "boost-system",
-      "version>=": "1.87.0"
-    }
+    "boost-asio"
   ]
 }
