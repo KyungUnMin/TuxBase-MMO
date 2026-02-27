@@ -1,20 +1,18 @@
 {
     "version": "0.2.0",
-    "configurations": 
-    [
+    "configurations": [
         {
             "name": "GameServer (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Linux/02_ServerApp/GameServer",
+            "program": "${workspaceFolder}/build/Linux/03_ServerApp/GameServer",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "setupCommands": 
-            [
+            "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",

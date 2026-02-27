@@ -1,10 +1,10 @@
 {
     "editor.formatOnSave": false,
-    "cmake.configureOnOpen": false,
-    "cmake.automaticReconfigure": false,
+    "cmake.configureOnOpen": true,
+    "cmake.automaticReconfigure": true,
     "workbench.tree.indent": 20,
     "workbench.tree.renderIndentGuides": "always",
-    "editor.tabSize": 4,
+    "editor.tabSize": 2,
     "editor.insertSpaces": true,
     "editor.detectIndentation": false
 }
