@@ -4,6 +4,7 @@
   "description": "TuxBase-MMO Server - MapleStory-style MMORPG",
   "dependencies": [
     "boost-asio",
-    "fmt"
+    "fmt",
+    "gtest"
   ]
 }
