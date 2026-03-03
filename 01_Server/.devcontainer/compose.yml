@@ -1,5 +1,6 @@
 services:
   mainserver:
+    container_name: tuxbase-mainserver
     build: .
     ports:
       - "13000:13000"
