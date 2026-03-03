@@ -1,5 +1,5 @@
 {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
     "cmake.configureOnOpen": true,
     "cmake.automaticReconfigure": true,
     "workbench.tree.indent": 20,

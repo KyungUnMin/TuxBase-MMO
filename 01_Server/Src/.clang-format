@@ -1,0 +1,45 @@
+BasedOnStyle: Microsoft
+
+# 들여쓰기
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# 중괄호 스타일 (Allman)
+BreakBeforeBraces: Allman
+
+# 줄 길이 (0 = 자동 줄바꿈 안 함, 의도적으로 나눈 줄은 유지)
+ColumnLimit: 0
+
+# 포인터/참조 정렬
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# include 정렬 (정렬하지 않음, 순서 유지)
+SortIncludes: Never
+IncludeBlocks: Preserve
+
+# 네임스페이스
+NamespaceIndentation: All
+
+# 접근 지정자 (public, private)
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+
+# 함수 파라미터
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortBlocksOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BinPackArguments: true
+BinPackParameters: true
+
+# 빈 줄
+MaxEmptyLinesToKeep: 3
+KeepEmptyLinesAtTheStartOfBlocks: true
+
+# 공백
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyBlock: false
+SpacesInAngles: Never
