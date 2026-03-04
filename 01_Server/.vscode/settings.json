@@ -1,0 +1,12 @@
+{
+    // MS C/C++ IntelliSense 비활성화 (clangd와 충돌 방지)
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.arguments": [
+        // compile_commands.json 위치 (워크스페이스 루트 기준 상대 경로)
+        "--compile-commands-dir=Src/build/Linux",
+        // 컨테이너 경로(/root/src)를 호스트 경로로 변환
+        "--path-mappings=/root/src=${workspaceFolder}/Src",
+        // 백그라운드에서 전체 프로젝트 인덱싱 (열지 않은 파일도 포함)
+        "--background-index"
+    ]
+}
