@@ -12,7 +12,8 @@
                 "llvm-vs-code-extensions.vscode-clangd",
                 "shardulm94.trailing-spaces",
                 "msfukui.eof-mark",
-                "eamodio.gitlens"
+                "eamodio.gitlens",
+                "matepek.vscode-catch2-test-adapter"
             ],
             "settings": {
                 "editor.formatOnSave": false,
