@@ -1,34 +1,29 @@
 #pragma once
 
-inline std::uint64_t Tick()
-{
-    const auto now = std::chrono::steady_clock::now();
-    return static_cast<std::uint64_t>(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            now.time_since_epoch())
-            .count());
-}
-
 class StopWatch
 {
-private:
+public:
+    StopWatch() = default;
+    ~StopWatch() = default;
+
     StopWatch(const StopWatch&) = delete;
     StopWatch(StopWatch&&) = delete;
     StopWatch& operator=(const StopWatch&) = delete;
     StopWatch& operator=(StopWatch&&) = delete;
 
-public:
-    StopWatch() = default;
-    ~StopWatch() = default;
-
     void Start();
     void Stop();
     void Reset();
 
-    std::uint64_t GetElapsedNanoSeconds() const;
-    double GetElapsedSeconds() const;
+    UINT64 GetDurationNs() const;  // 나노초
+    UINT64 GetDurationUs() const;  // 마이크로초
+    UINT64 GetDurationMs() const;  // 밀리초
+    UINT64 GetDurationSec() const; // 초
 
 private:
-    std::uint64_t _startPoint = 0;
-    std::uint64_t _endPoint = 0;
+    static UINT64 GetNow();
+
+private:
+    UINT64 m_startPoint = 0;
+    UINT64 m_endPoint = 0;
 };

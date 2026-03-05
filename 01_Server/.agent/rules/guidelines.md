@@ -160,7 +160,7 @@ public:
 | 클래스/구조체 | `PascalCase` | `GameSession`, `PacketHandler` |
 | 인터페이스 | `I` 접두어 + `PascalCase` | `INetworkAcceptor`, `ISessionManager` |
 | 함수/메서드 | `PascalCase` | `StartAccept()`, `HandlePacket()` |
-| 멤버 변수 | `_camelCase` | `_sessionId`, `_isRunning` |
+| 멤버 변수 | `m_camelCase` | `m_sessionId`, `m_isRunning` |
 | 지역 변수/매개변수 | `camelCase` | `packetSize`, `userId` |
 | 상수/enum | `k` 접두어 + `PascalCase` 또는 `UPPER_SNAKE` | `kMaxPlayers`, `MAX_BUFFER_SIZE` |
 | 네임스페이스 | `PascalCase` | `TuxBase::Network` |
