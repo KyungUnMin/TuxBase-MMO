@@ -1,4 +1,6 @@
 {
+    // 파일 탐색기 들여쓰기 간격 (기본값: 8)
+    "workbench.tree.indent": 20,
     // MS C/C++ IntelliSense 비활성화 (clangd와 충돌 방지)
     "C_Cpp.intelliSenseEngine": "disabled",
     "clangd.arguments": [

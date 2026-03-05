@@ -13,9 +13,13 @@
                 "shardulm94.trailing-spaces",
                 "msfukui.eof-mark",
                 "eamodio.gitlens",
-                "matepek.vscode-catch2-test-adapter"
+                "matepek.vscode-catch2-test-adapter",
+                "oderwat.indent-rainbow"
             ],
             "settings": {
+                "editor.tabSize": 4,
+                "editor.detectIndentation": false,
+                "editor.guides.indentation": false,
                 "editor.formatOnSave": false,
                 "C_Cpp.intelliSenseEngine": "disabled",
                 "clangd.arguments": [
