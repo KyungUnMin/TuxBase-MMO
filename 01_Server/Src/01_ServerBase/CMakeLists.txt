@@ -21,12 +21,12 @@ add_library(ServerBase STATIC
 
 if(WIN32)
     target_sources(ServerBase PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Check/BackTrace_win32.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_win32.cpp"
     )
     target_link_libraries(ServerBase PUBLIC dbghelp)
 else()
     target_sources(ServerBase PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Check/BackTrace_linux.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_linux.cpp"
     )
 endif()
 

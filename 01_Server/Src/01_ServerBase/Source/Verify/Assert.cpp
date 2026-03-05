@@ -1,5 +1,5 @@
-#include "Check/Assert.h"
-#include "Check/BackTrace.h"
+#include "Verify/Assert.h"
+#include "Verify/BackTrace.h"
 
 void Assert(bool condition, const std::string& message, const char* fileName,
             int lineNumber)

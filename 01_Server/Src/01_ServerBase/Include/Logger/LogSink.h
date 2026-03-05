@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Check/Assert.h"
+#include "Verify/Assert.h"
 
 // TODO: 싱크 인터페이스로 변경 및 팩토리 추가
 
