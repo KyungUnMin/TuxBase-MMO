@@ -1,5 +1,5 @@
-#include "RingBuffer.h"
-#include "Assert.h"
+#include "DataStruct/RingBuffer.h"
+#include "Check/Assert.h"
 
 
 bool RingBuffer::IsCursorBetween(UINT32 start, UINT32 cursor, UINT32 end)

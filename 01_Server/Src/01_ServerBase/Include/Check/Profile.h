@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TimePoint.h"
+#include "Time/TimePoint.h"
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #if defined(__PROFILE__)

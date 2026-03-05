@@ -2,6 +2,8 @@ CompileFlags:
   Add:
     - "-xc++"
     - "-std=c++20"
+    - "-include"
+    - "pch.h"
     - "-I01_ServerBase/Include"
     - "-I02_ServerEngine/Include"
     - "-Ibuild/Linux/vcpkg_installed/x64-linux/include"

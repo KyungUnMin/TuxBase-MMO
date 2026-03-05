@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LogSink.h"
+#include "Logger/LogSink.h"
 
 enum class eLogLevel : uint8_t
 {
@@ -38,4 +38,4 @@ private:
     ISink* _sink = nullptr;
 };
 
-#include "Logger.inl"
+#include "Logger/Logger.inl"

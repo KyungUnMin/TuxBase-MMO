@@ -1,7 +1,5 @@
 #pragma once
 
-using UINT32 = unsigned int;
-
 class RingBuffer
 {
     static bool IsCursorBetween(UINT32 start, UINT32 cursor, UINT32 end);

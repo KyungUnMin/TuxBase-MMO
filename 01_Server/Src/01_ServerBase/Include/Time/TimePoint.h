@@ -9,10 +9,6 @@ inline std::uint64_t Tick()
             .count());
 }
 
-/**
- * @brief 경과 시간을 측정하는 스톱워치 클래스.
- * std::chrono::steady_clock 기반으로 나노초 단위의 정밀 시간을 측정합니다.
- */
 class StopWatch
 {
 private:

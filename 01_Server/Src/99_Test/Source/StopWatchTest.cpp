@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "TimePoint.h"
+#include "Time/TimePoint.h"
 
 TEST(StopWatchTest, InitialStateIsZero)
 {
