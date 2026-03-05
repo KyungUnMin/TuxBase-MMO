@@ -1,15 +1,43 @@
 #pragma once
 
 // ─────────────────────────────────────────────
-// C++ 표준 라이브러리
+// C++ 표준 라이브러리 — 기본 타입 & 유틸리티
 // ─────────────────────────────────────────────
-#include <array>
-#include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <memory>
+
+// ─────────────────────────────────────────────
+// C++ 표준 라이브러리 — 컨테이너
+// ─────────────────────────────────────────────
+#include <array>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
+
+// ─────────────────────────────────────────────
+// C++ 표준 라이브러리 — 알고리즘 & 유틸리티
+// ─────────────────────────────────────────────
+#include <algorithm>
+#include <utility>
+
+// ─────────────────────────────────────────────
+// C++ 표준 라이브러리 — 시간
+// ─────────────────────────────────────────────
+#include <chrono>
+
+// ─────────────────────────────────────────────
+// C++ 표준 라이브러리 — I/O & 스트림
+// ─────────────────────────────────────────────
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+// ─────────────────────────────────────────────
+// 외부 라이브러리 — fmt
+// ─────────────────────────────────────────────
+#include <fmt/base.h>
+#include <fmt/chrono.h>
+#include <fmt/color.h>
+#include <fmt/format.h>

@@ -1,23 +1,28 @@
 #include "TimePoint.h"
 
-namespace common {
-
-void StopWatch::Start() { _startPoint = Tick(); }
-
-void StopWatch::Stop() { _endPoint = Tick(); }
-
-void StopWatch::Reset() {
-  _startPoint = 0;
-  _endPoint = 0;
+void StopWatch::Start()
+{
+    _startPoint = Tick();
 }
 
-std::uint64_t StopWatch::GetElapsedNanoSeconds() const {
-  return _endPoint - _startPoint;
+void StopWatch::Stop()
+{
+    _endPoint = Tick();
 }
 
-double StopWatch::GetElapsedSeconds() const {
-  constexpr double kNanoSecondsScale = 1'000'000'000.0;
-  return static_cast<double>(GetElapsedNanoSeconds()) / kNanoSecondsScale;
+void StopWatch::Reset()
+{
+    _startPoint = 0;
+    _endPoint = 0;
 }
 
-} // namespace common
+std::uint64_t StopWatch::GetElapsedNanoSeconds() const
+{
+    return _endPoint - _startPoint;
+}
+
+double StopWatch::GetElapsedSeconds() const
+{
+    constexpr double kNanoSecondsScale = 1'000'000'000.0;
+    return static_cast<double>(GetElapsedNanoSeconds()) / kNanoSecondsScale;
+}

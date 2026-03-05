@@ -1,7 +1,4 @@
 #pragma once
-#include <utility>
-
-namespace common {
 
 using UINT32 = unsigned int;
 
@@ -9,7 +6,7 @@ class RingBuffer
 {
     static bool IsCursorBetween(UINT32 start, UINT32 cursor, UINT32 end);
 
-  public:
+public:
     class Writer
     {
         friend class RingBuffer;
@@ -17,7 +14,7 @@ class RingBuffer
         Writer();
         Writer(RingBuffer* owner, void* reservePtr, UINT32 reserveSize, UINT32 reserveCursor);
 
-      public:
+    public:
         ~Writer();
 
         Writer(Writer&& other) noexcept;
@@ -32,7 +29,7 @@ class RingBuffer
             return static_cast<T*>(_reservePtr);
         }
 
-      private:
+    private:
         void* GetReservePtr() const
         {
             return _reservePtr;
@@ -103,7 +100,7 @@ class RingBuffer
     }
     void Clear();
 
-  private:
+private:
     UINT32 Write(const void* data, UINT32 writeSize);
 
     using Chunk = std::pair<UINT32, UINT32>;
@@ -135,5 +132,3 @@ class RingBuffer
 };
 
 using RingBufferWriter = RingBuffer::Writer;
-
-} // namespace common

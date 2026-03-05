@@ -3,13 +3,13 @@
 
 TEST(StopWatchTest, InitialStateIsZero)
 {
-    common::StopWatch sw;
+    StopWatch sw;
     EXPECT_EQ(sw.GetElapsedNanoSeconds(), 0);
 }
 
 TEST(StopWatchTest, MeasuresElapsedTime)
 {
-    common::StopWatch sw;
+    StopWatch sw;
     sw.Start();
 
     // 간단한 지연
@@ -26,7 +26,7 @@ TEST(StopWatchTest, MeasuresElapsedTime)
 
 TEST(StopWatchTest, ResetClearsTime)
 {
-    common::StopWatch sw;
+    StopWatch sw;
     sw.Start();
     sw.Stop();
     sw.Reset();
