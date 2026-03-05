@@ -1,3 +1,5 @@
+#include <ctime>
+
 constexpr const char* GetLevelString(eLogLevel level)
 {
     switch (level)

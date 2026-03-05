@@ -2,6 +2,9 @@
 
 #include "Verify/Assert.h"
 
+#include <fstream>
+#include <vector>
+
 // TODO: 싱크 인터페이스로 변경 및 팩토리 추가
 
 enum class eLogLevel : uint8_t;

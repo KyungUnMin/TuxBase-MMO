@@ -4,6 +4,7 @@
 #include "Verify/BackTrace.h"
 #include <execinfo.h>
 #include <libunwind-x86_64.h>
+#include <sstream>
 #include <unistd.h>
 
 namespace
