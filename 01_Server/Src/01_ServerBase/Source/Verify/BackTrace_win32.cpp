@@ -3,9 +3,6 @@
 #include <DbgHelp.h>
 #include <Windows.h>
 
-
-#pragma comment(lib, "dbghelp.lib")
-
 void PrintBackTrace()
 {
     const int kMaxFrame = 100;

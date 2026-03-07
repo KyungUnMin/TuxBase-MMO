@@ -9,37 +9,46 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp"
 )
 
-#플랫폼별 BackTrace 파일 분리: GLOB에서 제외 후 조건부 추가
-list(FILTER SRC_FILES EXCLUDE REGEX "BackTrace_(linux|win32)\\.cpp$")
+# 빌드 제외 파일 목록
+set(IGNORE_SRC_FILES
+    "BackTrace_(linux|win32)\\.cpp$"
+    "RingBuffer\\.(cpp|h)$"
+)
+foreach(IGNORE_SRC_FILE IN LISTS IGNORE_SRC_FILES)
+    list(FILTER SRC_FILES EXCLUDE REGEX "${IGNORE_SRC_FILE}")
+endforeach()
 
-#임시: RingBuffer 빌드 제외
-list(FILTER SRC_FILES EXCLUDE REGEX "RingBuffer\\.(cpp|h)$")
+# 운영체제 별로 다르게 처리하는 소스 파일 추가
+if(WIN32)
+    list(APPEND SRC_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_win32.cpp"
+    )
+elseif(UNIX)
+    list(APPEND SRC_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_linux.cpp"
+    )
+endif()
 
 add_library(ServerBase STATIC
     ${SRC_FILES}
 )
 
-if(WIN32)
-    target_sources(ServerBase PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_win32.cpp"
-    )
-    target_link_libraries(ServerBase PUBLIC dbghelp)
-else()
-    target_sources(ServerBase PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_linux.cpp"
-    )
-endif()
-
+# include 참조 위치
 target_include_directories(ServerBase
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Include
 )
 
-#fmt 라이브러리 링크
+# vcpkg에 설치한 라이브러리 링크
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(ServerBase PUBLIC fmt::fmt)
 
-#PCH 설정
+# 플랫폼별 링크 라이브러리
+if(WIN32)
+    target_link_libraries(ServerBase PUBLIC dbghelp)
+endif()
+
+# PCH 설정
 target_precompile_headers(ServerBase
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Include/pch.h
