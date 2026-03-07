@@ -22,7 +22,7 @@ TEST_F(StopWatchTest, Init)
 }
 
 // Stop을 호출하지 않아도 실시간으로 시간이 흘러야 함
-TEST_F(StopWatchTest, TimeCheck)
+TEST_F(StopWatchTest, Tick)
 {
     m_stopwatch.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -32,7 +32,7 @@ TEST_F(StopWatchTest, TimeCheck)
 }
 
 // Stop 호출 후에는 시간이 고정되어야 함
-TEST_F(StopWatchTest, StopTest)
+TEST_F(StopWatchTest, Stop)
 {
     m_stopwatch.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -45,7 +45,7 @@ TEST_F(StopWatchTest, StopTest)
 }
 
 // Reset 호출 시 모든 기록이 지워져야 함
-TEST_F(StopWatchTest, ResetTest)
+TEST_F(StopWatchTest, Reset)
 {
     m_stopwatch.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -56,7 +56,7 @@ TEST_F(StopWatchTest, ResetTest)
 }
 
 // Ns, Us, Ms, Sec 변환이 올바른지 확인
-TEST_F(StopWatchTest, ConversionTest)
+TEST_F(StopWatchTest, GetValueType)
 {
     m_stopwatch.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(1100));
