@@ -15,11 +15,11 @@ add_library(ServerEngine STATIC
 
 target_include_directories(ServerEngine
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Include
 )
 
 #boost 라이브러리 추가
-find_package(Boost REQUIRED)
+find_package(Boost CONFIG REQUIRED)
 target_link_libraries(ServerEngine
     PUBLIC
         ServerBase

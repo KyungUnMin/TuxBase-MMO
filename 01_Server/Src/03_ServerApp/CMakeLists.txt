@@ -12,7 +12,7 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 add_executable(GameServer ${SRC_FILES})
 target_include_directories(GameServer
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Include
 )
 
 #ServerEngine 라이브러리 링크
