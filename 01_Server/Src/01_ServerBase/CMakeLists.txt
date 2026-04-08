@@ -12,7 +12,6 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 # 빌드 제외 파일 목록
 set(IGNORE_SRC_FILES
     "BackTrace_(linux|win32)\\.cpp$"
-    "RingBuffer\\.(cpp|h)$"
     "Profile\\.(cpp|h)$"
 )
 foreach(IGNORE_SRC_FILE IN LISTS IGNORE_SRC_FILES)

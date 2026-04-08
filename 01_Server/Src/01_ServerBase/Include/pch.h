@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 // ─────────────────────────────────────────────
 // C++ 표준 라이브러리 — 컨테이너

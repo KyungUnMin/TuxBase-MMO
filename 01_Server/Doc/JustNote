@@ -1,0 +1,7 @@
+연습장임
+
+링 버퍼 관련
+1. 함수명 맘에 안듬.
+2. 외부에서 Reserve/Commit 몰랐으면 좋겠음
+3. CreateWriter, CreateReader 만들어서 반환하는게 나을듯
+4. 
