@@ -5,43 +5,34 @@ class RingBufferWriter
 {
     friend class RingBuffer;
 
-    RingBufferWriter(RingBuffer* owner, UINT32 totalSize,
-                     void* firstPtr, UINT32 firstSize,
-                     void* secondPtr, UINT32 secondSize);
+    RingBufferWriter();
+    RingBufferWriter(RingBuffer* owner, void* ptr, UINT32 size);
 
 public:
-    RingBufferWriter();
     ~RingBufferWriter();
 
-    RingBufferWriter(RingBufferWriter&& other) noexcept;
-    RingBufferWriter& operator=(RingBufferWriter&& other) noexcept;
     RingBufferWriter(const RingBufferWriter&) = delete;
     RingBufferWriter& operator=(const RingBufferWriter&) = delete;
+    RingBufferWriter(RingBufferWriter&&) = delete;
+    RingBufferWriter& operator=(RingBufferWriter&&) = delete;
 
     bool IsValid() const;
-
-    bool IsWrapped() const
-    {
-        return m_secondPtr != nullptr;
-    }
+    UINT32 GetSize() const { return m_size; }
 
     template <typename T>
-    T* As()
+    T& As()
     {
         ASSERT(IsValid(), "Writer is invalid");
-        ASSERT(!IsWrapped(), "Cannot use As<T>() on wrapped write");
-        return static_cast<T*>(m_firstPtr);
+        return *static_cast<T*>(m_ptr);
     }
 
-    UINT32 WriteData(const void* data, UINT32 size);
+    void Commit();
 
 private:
     void Clear();
 
+private:
     RingBuffer* m_owner;
-    void* m_firstPtr;
-    UINT32 m_firstSize;
-    void* m_secondPtr;
-    UINT32 m_secondSize;
-    UINT32 m_totalSize;
+    void* m_ptr;
+    UINT32 m_size;
 };

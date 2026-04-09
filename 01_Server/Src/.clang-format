@@ -9,6 +9,10 @@ ContinuationIndentWidth: 4
 # 중괄호 스타일 (Allman)
 BreakBeforeBraces: Allman
 
+# 생성자 초기화 리스트
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+
 # 줄 길이 (0 = 자동 줄바꿈 안 함, 의도적으로 나눈 줄은 유지)
 ColumnLimit: 0
 

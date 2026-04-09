@@ -4,4 +4,8 @@
 1. 함수명 맘에 안듬.
 2. 외부에서 Reserve/Commit 몰랐으면 좋겠음
 3. CreateWriter, CreateReader 만들어서 반환하는게 나을듯
-4. 
+4. Commit 계열 함수는 다 없애고 Writter/Reader가 소멸할때 자동으로 Commit 되도록 하자
+5. 가능하면 SPtr이나 UPtr 사용하자
+    근데 RingBuffer 클래스 만큼은 굳이 포인터 안 쓰고 지금처럼 값으로 반환하는게 더 낫지 않을까?
+    값을 반환하지 말고 참조를 받는 식으로 할까? 반환값은 성공 여부 bool
+6. Writer랑 Reader는 한번에 한개씩만 생성 가능하게 제한하면 어떨까?
