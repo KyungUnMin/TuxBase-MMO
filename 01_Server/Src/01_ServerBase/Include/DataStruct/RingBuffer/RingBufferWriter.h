@@ -13,10 +13,12 @@ public:
 
     RingBufferWriter(const RingBufferWriter&) = delete;
     RingBufferWriter& operator=(const RingBufferWriter&) = delete;
-    RingBufferWriter(RingBufferWriter&&) = delete;
-    RingBufferWriter& operator=(RingBufferWriter&&) = delete;
+
+    RingBufferWriter(RingBufferWriter&&) noexcept;
+    RingBufferWriter& operator=(RingBufferWriter&&) noexcept;
 
     bool IsValid() const;
+    void* GetPtr() const { return m_ptr; }
     UINT32 GetSize() const { return m_size; }
 
     template <typename T>
@@ -26,7 +28,8 @@ public:
         return *static_cast<T*>(m_ptr);
     }
 
-    void Commit();
+    void Commit(UINT32 writeSize = 0);
+    void GiveUp();
 
 private:
     void Clear();

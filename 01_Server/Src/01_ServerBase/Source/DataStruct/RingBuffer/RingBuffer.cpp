@@ -104,31 +104,111 @@ RingBufferReader RingBuffer::CreateReader(UINT32 readSize)
     return RingBufferReader(this, m_buffer.get() + m_readCursor, readSize);
 }
 
-void RingBuffer::GiveUpWriter(RingBufferWriter& writer)
+RingBufferWriter RingBuffer::CreateAllWriter()
 {
-}
-void RingBuffer::GiveUpReader(RingBufferReader& reader)
-{
+    ASSERT(!m_isActiveWriter, "Writer is already active");
+
+    if (m_isFull)
+    {
+        return RingBufferWriter();
+    }
+
+    // 연속으로 쓸 수 있는 크기 계산
+    UINT32 contiguousSize;
+    if (m_readCursor <= m_writeCursor)
+    {
+        contiguousSize = kCapacity - m_writeCursor;
+    }
+    else
+    {
+        contiguousSize = m_readCursor - m_writeCursor;
+    }
+
+    if (contiguousSize == 0)
+    {
+        return RingBufferWriter();
+    }
+
+    m_isActiveWriter = true;
+    return RingBufferWriter(this, m_buffer.get() + m_writeCursor, contiguousSize);
 }
 
-void RingBuffer::CommitWrite(RingBufferWriter& writer)
+RingBufferReader RingBuffer::CreateAllReader()
+{
+    ASSERT(!m_isActiveReader, "Reader is already active");
+
+    // tailCursor에 도달했으면 0으로 점프
+    if (m_readCursor == m_tailCursor)
+    {
+        m_readCursor = 0;
+        m_tailCursor = kCapacity;
+    }
+
+    if (IsEmpty())
+    {
+        return RingBufferReader();
+    }
+
+    // 연속으로 읽을 수 있는 크기 계산
+    UINT32 contiguousSize;
+    if (m_readCursor < m_writeCursor)
+    {
+        contiguousSize = m_writeCursor - m_readCursor;
+    }
+    else
+    {
+        contiguousSize = m_tailCursor - m_readCursor;
+    }
+
+    if (contiguousSize == 0)
+    {
+        return RingBufferReader();
+    }
+
+    m_isActiveReader = true;
+    return RingBufferReader(this, m_buffer.get() + m_readCursor, contiguousSize);
+}
+
+
+void RingBuffer::GiveUpWriter(RingBufferWriter& writer)
 {
     ASSERT(writer.IsValid(), "Writer is invalid");
     ASSERT(m_isActiveWriter, "No active writer");
-    ASSERT(m_writeCursor + writer.GetSize() <= kCapacity, "Write cursor overflow");
+    m_isActiveWriter = false;
+    writer.Clear();
+}
+void RingBuffer::GiveUpReader(RingBufferReader& reader)
+{
+    ASSERT(reader.IsValid(), "Reader is invalid");
+    ASSERT(m_isActiveReader, "No active reader");
+    m_isActiveReader = false;
+    reader.Clear();
+}
 
-    m_writeCursor = (m_writeCursor + writer.GetSize()) % kCapacity;
+void RingBuffer::CommitWrite(RingBufferWriter& writer, UINT32 writeSize /* = 0*/)
+{
+    ASSERT(writer.IsValid(), "Writer is invalid");
+    ASSERT(m_isActiveWriter, "No active writer");
+
+    writeSize = (0 == writeSize) ? writer.GetSize() : writeSize;
+    ASSERT(writeSize <= writer.GetSize(), "Write size exceeds reserved size");
+    ASSERT(m_writeCursor + writeSize <= kCapacity, "Write cursor overflow");
+
+    m_writeCursor = (m_writeCursor + writeSize) % kCapacity;
     m_isFull = (m_writeCursor == m_readCursor);
     m_isActiveWriter = false;
     writer.Clear();
 }
 
-void RingBuffer::CommitRead(RingBufferReader& reader)
+void RingBuffer::CommitRead(RingBufferReader& reader, UINT32 readSize /* = 0*/)
 {
     ASSERT(reader.IsValid(), "Reader is invalid");
     ASSERT(m_isActiveReader, "No active reader");
 
-    m_readCursor += reader.m_size;
+    readSize = (0 == readSize) ? reader.GetSize() : readSize;
+    ASSERT(readSize <= reader.GetSize(), "Read size exceeds reserved size");
+    m_readCursor += readSize;
+    ASSERT(m_readCursor <= m_tailCursor, "Read cursor overflow");
 
     // readCursor가 tailCursor에 도달하면 0으로 점프
     if (m_readCursor == m_tailCursor)

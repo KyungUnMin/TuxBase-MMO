@@ -20,12 +20,14 @@ public:
 
     RingBufferWriter CreateWriter(UINT32 writeSize);
     RingBufferReader CreateReader(UINT32 readSize);
-    void GiveUpWriter(RingBufferWriter& writer);
-    void GiveUpReader(RingBufferReader& reader);
+    RingBufferWriter CreateAllWriter();
+    RingBufferReader CreateAllReader();
 
 private:
-    void CommitWrite(RingBufferWriter& writer);
-    void CommitRead(RingBufferReader& reader);
+    void CommitWrite(RingBufferWriter& writer, UINT32 writeSize = 0);
+    void CommitRead(RingBufferReader& reader, UINT32 readSize = 0);
+    void GiveUpWriter(RingBufferWriter& writer);
+    void GiveUpReader(RingBufferReader& reader);
 
     bool IsEmpty() const
     {

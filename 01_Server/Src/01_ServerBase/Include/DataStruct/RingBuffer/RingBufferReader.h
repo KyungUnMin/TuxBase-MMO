@@ -13,8 +13,9 @@ public:
 
     RingBufferReader(const RingBufferReader&) = delete;
     RingBufferReader& operator=(const RingBufferReader&) = delete;
-    RingBufferReader(RingBufferReader&&) = delete;
-    RingBufferReader& operator=(RingBufferReader&&) = delete;
+
+    RingBufferReader(RingBufferReader&&) noexcept;
+    RingBufferReader& operator=(RingBufferReader&&) noexcept;
 
     bool IsValid() const;
     const void* GetPtr() const { return m_ptr; }
@@ -27,6 +28,10 @@ public:
         return *static_cast<const T*>(m_ptr);
     }
 
+    void Commit(UINT32 readSize = 0);
+    void GiveUp();
+
+private:
     void Clear();
 
 private:
