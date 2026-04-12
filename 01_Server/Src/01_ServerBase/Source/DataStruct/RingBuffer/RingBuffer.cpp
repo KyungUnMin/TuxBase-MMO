@@ -219,6 +219,12 @@ void RingBuffer::CommitRead(RingBufferReader& reader, UINT32 readSize /* = 0*/)
 
     m_isFull = false;
     m_isActiveReader = false;
+
+    if (!m_isActiveWriter && m_readCursor == m_writeCursor)
+    {
+        Clear();
+    }
+
     reader.Clear();
 }
 
