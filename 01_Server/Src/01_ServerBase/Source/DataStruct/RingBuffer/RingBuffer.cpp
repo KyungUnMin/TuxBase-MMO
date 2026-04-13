@@ -12,6 +12,9 @@ RingBuffer::RingBuffer(UINT32 bufferSize)
     , kCapacity(bufferSize)
 {
     ASSERT(0 < bufferSize, "Ring buffer size is 0");
+#ifdef _DEBUG
+    memset(bufferSize.get(), 0, bufferSize);
+#endif
 }
 
 RingBuffer::~RingBuffer()
@@ -90,7 +93,6 @@ RingBufferReader RingBuffer::CreateReader(UINT32 readSize)
     }
     else
     {
-        // R >= W (m_isFull 또는 skip-tail): [R .. tailCursor) 구간
         contiguousSize = m_tailCursor - m_readCursor;
     }
 
