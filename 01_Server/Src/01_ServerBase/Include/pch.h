@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <stack>
+#include <vector>
 
 // ─────────────────────────────────────────────
 // C++ 표준 라이브러리 — 컨테이너

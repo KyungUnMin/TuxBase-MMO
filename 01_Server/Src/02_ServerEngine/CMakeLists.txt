@@ -13,6 +13,7 @@ add_library(ServerEngine STATIC
     ${SRC_FILES}
 )
 
+# include 참조 위치
 target_include_directories(ServerEngine
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Include
@@ -24,4 +25,10 @@ target_link_libraries(ServerEngine
     PUBLIC
         ServerBase
         Boost::headers
+)
+
+# PCH 설정
+target_precompile_headers(ServerEngine
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/Include/pch.h
 )
