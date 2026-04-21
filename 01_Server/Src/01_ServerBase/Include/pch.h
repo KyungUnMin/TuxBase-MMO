@@ -9,6 +9,10 @@
 #include <memory>
 #include <stack>
 #include <vector>
+#include <thread>
+#include <functional>
+#include <atomic>
+#include <mutex>
 
 // ─────────────────────────────────────────────
 // C++ 표준 라이브러리 — 컨테이너

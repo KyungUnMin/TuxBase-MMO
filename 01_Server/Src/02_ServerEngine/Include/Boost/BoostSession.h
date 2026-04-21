@@ -20,6 +20,9 @@ public:
     BoostSession& operator=(const BoostSession&) = delete;
     BoostSession& operator=(BoostSession&&) = delete;
 
+public:
+    void Start();
+
 private:
     Socket m_socket;
     BoostNetEngine& m_netEngine;

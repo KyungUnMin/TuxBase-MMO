@@ -7,3 +7,7 @@ BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
     , m_sendBuffer(kBufferSize)
 {
 }
+
+void BoostSession::Start()
+{
+}

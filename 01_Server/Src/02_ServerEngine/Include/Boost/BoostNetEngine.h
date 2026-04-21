@@ -1,6 +1,7 @@
 #pragma once
 #include "Common/INetEngine.h"
 #include "Boost/BoostSession.h"
+#include "Threading/Thread.h"
 
 class BoostNetEngine : public INetEngine
 {
@@ -12,24 +13,26 @@ class BoostNetEngine : public INetEngine
 
 public:
     BoostNetEngine();
-    ~BoostNetEngine() override = default;
+    ~BoostNetEngine() override;
 
     BoostNetEngine(const BoostNetEngine&) = delete;
     BoostNetEngine(BoostNetEngine&&) = delete;
     BoostNetEngine& operator=(const BoostNetEngine&) = delete;
     BoostNetEngine& operator=(BoostNetEngine&&) = delete;
 
-    void Listen();
+    void Start(const UINT16 port);
+    void Stop();
 
 private:
-    void HandleAccept(Session* session, const ErrorCode& errorCode);
+    void CreateSessions();
+    void Listen(const UINT16 port);
+    void ListenWorkerThreadFunc();
+    void Update();
 
 private:
+    std::atomic<bool> m_isRun;
     IoContext m_ioContext;
     Acceptor m_accepter;
-
-    template <typename T>
-    using Stack = std::vector<T>;
-    Stack<BoostSession*> m_sessionPool;
+    Thread m_acceptThread;
     std::vector<BoostSession> m_sessions;
 };

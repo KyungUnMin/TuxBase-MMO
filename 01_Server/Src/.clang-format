@@ -9,6 +9,10 @@ ContinuationIndentWidth: 4
 # 중괄호 스타일 (Allman)
 BreakBeforeBraces: Allman
 
+# 람다
+LambdaBodyIndentation: OuterScope
+AllowShortLambdasOnASingleLine: All
+
 # 생성자 초기화 리스트
 BreakConstructorInitializers: BeforeComma
 PackConstructorInitializers: Never
