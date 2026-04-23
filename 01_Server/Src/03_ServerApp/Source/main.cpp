@@ -1,11 +1,11 @@
-#include <filesystem>
-#include <iostream>
+#include <Boost/BoostNetEngine.h>
 
 int main()
 {
-    std::cout << "Hello TuxBase-MMO GameServer" << std::endl;
-    std::cout << "Current Directory: " << std::filesystem::current_path() << std::endl;
-    std::cout << "Hello Anti" << std::endl;
+    BoostNetEngine netEngine;
+    netEngine.Start(12345);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    netEngine.Stop();
 
     return 0;
 }

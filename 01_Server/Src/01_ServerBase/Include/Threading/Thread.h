@@ -12,6 +12,7 @@ public:
     Thread& operator=(Thread&&) = delete;
 
     void Start(std::string_view name, std::function<void()> workerThread);
+    void Join();
 
 private:
     void SetName(std::string_view name);

@@ -2,6 +2,9 @@
 #include "Common/INetEngine.h"
 #include "Boost/BoostSession.h"
 #include "Threading/Thread.h"
+#include "DataStruct/Lock/LockStack.h"
+#include <array>
+#include <optional>
 
 class BoostNetEngine : public INetEngine
 {
@@ -34,5 +37,6 @@ private:
     IoContext m_ioContext;
     Acceptor m_accepter;
     Thread m_acceptThread;
-    std::vector<BoostSession> m_sessions;
+    std::array<std::optional<BoostSession>, kMaxSessionCount> m_sessions;
+    LockStack<BoostSession*> m_sessionPool;
 };

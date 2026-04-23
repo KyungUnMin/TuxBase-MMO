@@ -12,6 +12,11 @@ Thread::Thread()
 
 Thread::~Thread()
 {
+    Join();
+}
+
+void Thread::Join()
+{
     if (m_thread.joinable())
     {
         m_thread.join();
@@ -35,11 +40,11 @@ void Thread::SetName(std::string_view name)
 #ifdef _WIN32
     wchar_t wideName[64] = {};
     MultiByteToWideChar(CP_UTF8, 0, name.data(), name.size(), wideName, 64);
-    SetThreadDescription(m_thread.native_handle(), wideName);
+    SetThreadDescription(GetCurrentThread(), wideName);
 #else
     char clampedName[16]; // 15자 제한
     std::strncpy(clampedName, name.data(), 15);
     clampedName[15] = '\0';
-    pthread_setname_np(m_thread.native_handle(), clampedName);
+    pthread_setname_np(pthread_self(), clampedName);
 #endif
 }

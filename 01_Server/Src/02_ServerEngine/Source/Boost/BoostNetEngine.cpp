@@ -1,9 +1,11 @@
 #include "Boost/BoostNetEngine.h"
+#include <thread>
 
 BoostNetEngine::BoostNetEngine()
     : m_isRun(false)
     , m_accepter(m_ioContext)
 {
+    m_sessionPool.Reserve(kMaxSessionCount);
 }
 
 BoostNetEngine::~BoostNetEngine()
@@ -22,9 +24,11 @@ void BoostNetEngine::Start(const UINT16 port)
 
 void BoostNetEngine::CreateSessions()
 {
-    m_sessions.reserve(kMaxSessionCount);
     for (UINT32 i = 0; i < kMaxSessionCount; ++i)
-        m_sessions.emplace_back(*this, m_ioContext);
+    {
+        BoostSession& session = m_sessions[i].emplace(*this, m_ioContext);
+        m_sessionPool.Push(&session);
+    }
 }
 
 void BoostNetEngine::Listen(const UINT16 port)
@@ -38,39 +42,25 @@ void BoostNetEngine::Listen(const UINT16 port)
     });
 }
 
-namespace
-{
-    template <typename T>
-    using Stack = std::vector<T>;
-}
-
 void BoostNetEngine::ListenWorkerThreadFunc()
 {
-    // TODO : sessionPool을 스택에다가 만들면, 클라가 접속 끊을때 세션 풀에 다시 넣어줄 수 가 없음.
-    // 세션풀을 멤버변수로 바꾸거나, 좀 더 다른 방법들을 고민해봐야 함
-    // 세션풀을 멤버변수로 바꾸면, 넣고 뺴고 할 때 락 잡아야 함
-
-    ASSERT(m_sessions.size() == kMaxSessionCount, "Session count is not equal to kMaxSessionCount");
-    Stack<BoostSession*> sessionPool(kMaxSessionCount, nullptr);
-    for (UINT32 i = 0; i < sessionPool.size(); ++i)
-    {
-        BoostSession& session = m_sessions[i];
-        // TODO : 유효성 체크 및 초기화 됐는지 체크
-        sessionPool[i] = &session;
-    }
-
     while (m_isRun.load())
     {
-        ASSERT(!sessionPool.empty(), "Session pool is empty");
-        BoostSession* session = sessionPool.back();
-        sessionPool.pop_back();
-        ASSERT(session, "Session is null");
+        BoostSession* session = nullptr;
+        while (nullptr == session && false == m_sessionPool.TryPop(session))
+        {
+            if (!m_isRun.load())
+                return;
+
+            // TODO : LOG_ERROR("Session pool is empty.");
+            std::this_thread::yield();
+        }
 
         ErrorCode errorCode;
         m_accepter.accept(session->GetSocket(), errorCode);
         if (errorCode)
         {
-            sessionPool.push_back(session);
+            m_sessionPool.Push(session);
 
             // Stop()에 의한 정상 종료
             if (errorCode == boost::asio::error::operation_aborted)
