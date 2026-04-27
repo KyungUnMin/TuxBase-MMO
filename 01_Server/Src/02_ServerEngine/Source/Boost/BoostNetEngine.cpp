@@ -1,11 +1,20 @@
 #include "Boost/BoostNetEngine.h"
+#include <array>
 #include <thread>
 
-BoostNetEngine::BoostNetEngine()
+BoostNetEngine::BoostNetEngine(UINT32 threadCount /*= 1*/, UINT32 sessionCount /*= kMaxSessionCount*/)
     : m_isRun(false)
     , m_accepter(m_ioContext)
+    , m_workGuard(boost::asio::make_work_guard(m_ioContext))
+    , m_acceptRetryTimer(m_ioContext)
+    , m_threads(threadCount)
 {
-    m_sessionPool.Reserve(kMaxSessionCount);
+    ASSERT(sessionCount <= kMaxSessionCount, "Session count overflow. Limit is %d", kMaxSessionCount);
+    for (UINT32 i = 0; i < sessionCount; ++i)
+    {
+        BoostSession& session = m_sessions[i].emplace(*this, m_ioContext);
+        m_sessionPool.Push(&session);
+    }
 }
 
 BoostNetEngine::~BoostNetEngine()
@@ -15,20 +24,9 @@ BoostNetEngine::~BoostNetEngine()
 
 void BoostNetEngine::Start(const UINT16 port)
 {
-    CreateSessions();
     m_isRun.store(true);
-
     Listen(port);
     Update();
-}
-
-void BoostNetEngine::CreateSessions()
-{
-    for (UINT32 i = 0; i < kMaxSessionCount; ++i)
-    {
-        BoostSession& session = m_sessions[i].emplace(*this, m_ioContext);
-        m_sessionPool.Push(&session);
-    }
 }
 
 void BoostNetEngine::Listen(const UINT16 port)
@@ -36,48 +34,66 @@ void BoostNetEngine::Listen(const UINT16 port)
     m_accepter.open(boost::asio::ip::tcp::v4());
     m_accepter.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
     m_accepter.listen();
-    m_acceptThread.Start("ListenWorkerThread", [this]()
-    {
-        ListenWorkerThreadFunc();
-    });
+    Accept();
 }
 
-void BoostNetEngine::ListenWorkerThreadFunc()
+void BoostNetEngine::Accept()
 {
-    while (m_isRun.load())
-    {
-        BoostSession* session = nullptr;
-        while (nullptr == session && false == m_sessionPool.TryPop(session))
-        {
-            if (!m_isRun.load())
-                return;
+    if (!m_isRun.load())
+        return;
 
-            // TODO : LOG_ERROR("Session pool is empty.");
-            std::this_thread::yield();
+    BoostSession* session = nullptr;
+    if (false == m_sessionPool.TryPop(session))
+    {
+        const UINT32 kWaitTime = 100;
+        m_acceptRetryTimer.expires_after(std::chrono::milliseconds(kWaitTime));
+        m_acceptRetryTimer.async_wait([this](const ErrorCode& errorCode)
+        {
+            if (errorCode)
+            {
+                // TODO : LOG_ERROR("Accept retry error: {}", errorCode.message());
+                return;
+            }
+
+            Accept();
+        });
+        return;
+    }
+
+    m_accepter.async_accept(session->GetSocket(), [this, session](const ErrorCode& errorCode)
+    {
+        if (!m_isRun.load())
+        {
+            m_sessionPool.Push(session);
+            return;
         }
 
-        ErrorCode errorCode;
-        m_accepter.accept(session->GetSocket(), errorCode);
         if (errorCode)
         {
             m_sessionPool.Push(session);
 
-            // Stop()에 의한 정상 종료
-            if (errorCode == boost::asio::error::operation_aborted)
-                break;
-
-            // LOG_ERROR("Accept error: {}", errorCode.message());
-            continue;
+            if (errorCode != boost::asio::error::operation_aborted)
+            {
+                // LOG_ERROR("Accept error: {}", errorCode.message());
+                Accept();
+            }
+            return;
         }
 
         session->Start();
-    }
+        Accept();
+    });
 }
 
 void BoostNetEngine::Update()
 {
-    // TODO : 스레드 풀을 만들어서 ioContext.run()을 실행
-    m_ioContext.run(); // 일단 오늘은 빌드 되는지만 보자
+    for (UINT32 i = 0; i < m_threads.size(); ++i)
+    {
+        m_threads[i].Start("BoostNetEngine_IO_Worker_" + std::to_string(i), [this]()
+        {
+            m_ioContext.run();
+        });
+    }
 }
 
 void BoostNetEngine::Stop()
@@ -88,5 +104,12 @@ void BoostNetEngine::Stop()
         return;
 
     m_accepter.close();
-    m_acceptThread.Join();
+    m_acceptRetryTimer.cancel();
+    m_ioContext.stop();
+    m_workGuard.reset();
+
+    for (Thread& thread : m_threads)
+    {
+        thread.Join();
+    }
 }

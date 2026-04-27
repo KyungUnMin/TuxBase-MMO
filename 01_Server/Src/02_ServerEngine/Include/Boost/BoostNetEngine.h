@@ -1,21 +1,21 @@
 #pragma once
 #include "Common/INetEngine.h"
 #include "Boost/BoostSession.h"
-#include "Threading/Thread.h"
 #include "DataStruct/Lock/LockStack.h"
-#include <array>
-#include <optional>
+#include "Threading/Thread.h"
 
 class BoostNetEngine : public INetEngine
 {
-    static constexpr UINT32 kMaxSessionCount = 1024;
-
     using IoContext = boost::asio::io_context;
     using Acceptor = boost::asio::ip::tcp::acceptor;
     using ErrorCode = boost::system::error_code;
+    using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
 
 public:
-    BoostNetEngine();
+    static constexpr UINT32 kMaxSessionCount = 1024;
+
+    BoostNetEngine() = delete;
+    BoostNetEngine(UINT32 threadCount = 1, UINT32 sessionCount = kMaxSessionCount);
     ~BoostNetEngine() override;
 
     BoostNetEngine(const BoostNetEngine&) = delete;
@@ -27,16 +27,17 @@ public:
     void Stop();
 
 private:
-    void CreateSessions();
     void Listen(const UINT16 port);
-    void ListenWorkerThreadFunc();
+    void Accept();
     void Update();
 
 private:
     std::atomic<bool> m_isRun;
     IoContext m_ioContext;
+    WorkGuard m_workGuard;
     Acceptor m_accepter;
-    Thread m_acceptThread;
+    boost::asio::steady_timer m_acceptRetryTimer;
     std::array<std::optional<BoostSession>, kMaxSessionCount> m_sessions;
-    LockStack<BoostSession*> m_sessionPool;
+    LockStack<BoostSession*, kMaxSessionCount> m_sessionPool;
+    std::vector<Thread> m_threads;
 };
