@@ -2,7 +2,7 @@
 #include "Common/ISession.h"
 #include "DataStruct/RingBuffer/RingBuffer.h"
 
-class BoostNetEngine;
+class BoostNetEngineServer;
 
 class BoostSession : public ISession
 {
@@ -13,7 +13,7 @@ class BoostSession : public ISession
 
 public:
     BoostSession() = delete;
-    BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
+    BoostSession(BoostNetEngineServer& netEngine, IoContext& ioContext);
     ~BoostSession() override = default;
 
     BoostSession(const BoostSession&) = delete;
@@ -27,7 +27,7 @@ public:
 
 private:
     Socket m_socket;
-    BoostNetEngine& m_netEngine;
+    BoostNetEngineServer& m_netEngine;
     RingBuffer m_recvBuffer;
     RingBuffer m_sendBuffer;
 };

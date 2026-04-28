@@ -1,10 +1,10 @@
 #pragma once
-#include "Common/INetEngine.h"
+#include "Common/INetEngineServer.h"
 #include "Boost/BoostSession.h"
 #include "DataStruct/Lock/LockStack.h"
 #include "Threading/Thread.h"
 
-class BoostNetEngine : public INetEngine
+class BoostNetEngineServer : public INetEngineServer
 {
     using IoContext = boost::asio::io_context;
     using Acceptor = boost::asio::ip::tcp::acceptor;
@@ -14,20 +14,19 @@ class BoostNetEngine : public INetEngine
 public:
     static constexpr UINT32 kMaxSessionCount = 1024;
 
-    BoostNetEngine() = delete;
-    BoostNetEngine(UINT32 threadCount = 1, UINT32 sessionCount = kMaxSessionCount);
-    ~BoostNetEngine() override;
+    explicit BoostNetEngineServer(UINT32 threadCount = 1);
+    ~BoostNetEngineServer() override;
 
-    BoostNetEngine(const BoostNetEngine&) = delete;
-    BoostNetEngine(BoostNetEngine&&) = delete;
-    BoostNetEngine& operator=(const BoostNetEngine&) = delete;
-    BoostNetEngine& operator=(BoostNetEngine&&) = delete;
+    BoostNetEngineServer(const BoostNetEngineServer&) = delete;
+    BoostNetEngineServer(BoostNetEngineServer&&) = delete;
+    BoostNetEngineServer& operator=(const BoostNetEngineServer&) = delete;
+    BoostNetEngineServer& operator=(BoostNetEngineServer&&) = delete;
 
-    void Start(const UINT16 port);
-    void Stop();
+    void Start(UINT16 port) override;
+    void Stop() override;
 
 private:
-    void Listen(const UINT16 port);
+    void Listen(UINT16 port);
     void Accept();
     void RetryAccept();
     void CompleteAccept(BoostSession* session, const ErrorCode& errorCode);

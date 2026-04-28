@@ -172,6 +172,10 @@ public:
 - `#pragma once` 사용 (include guard 대신).
 - 헤더 파일 확장자: `.hpp`, 소스 파일 확장자: `.cpp`.
 
+### 접근 제어
+- **`protected` 사용 지양**: 상속 구조에서도 멤버 변수는 `private`으로 선언하고, 필요 시 **getter/setter 함수**를 통해 접근.
+- 파생 클래스가 접근해야 하는 기능은 `public` 또는 `protected` **메서드**로 제공하되, 멤버 변수 자체를 `protected`로 노출하지 않음.
+
 ```cpp
 // ✅ 올바른 예시
 #pragma once
