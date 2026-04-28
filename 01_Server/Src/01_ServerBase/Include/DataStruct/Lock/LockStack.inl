@@ -22,16 +22,6 @@ inline LockStack<T, Size>::LockStack(const Args&... args)
 }
 
 template <typename T, UINT32 Size>
-template <typename... Args>
-inline LockStack<T, Size>::LockStack(UINT32 initSize, const Args&... args)
-{
-    ASSERT(initSize <= Size, "initSize overflow. Size(%d) < initSize(%d)", Size, initSize);
-    for (UINT32 i = 0; i < initSize; ++i)
-        m_stack[i] = T(args...);
-    m_topIndex = initSize;
-}
-
-template <typename T, UINT32 Size>
 inline void LockStack<T, Size>::Push(const T& data)
 {
     std::lock_guard<std::mutex> lock(m_mutex);

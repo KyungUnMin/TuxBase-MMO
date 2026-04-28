@@ -45,44 +45,54 @@ void BoostNetEngine::Accept()
     BoostSession* session = nullptr;
     if (false == m_sessionPool.TryPop(session))
     {
-        const UINT32 kWaitTime = 100;
-        m_acceptRetryTimer.expires_after(std::chrono::milliseconds(kWaitTime));
-        m_acceptRetryTimer.async_wait([this](const ErrorCode& errorCode)
-        {
-            if (errorCode)
-            {
-                // TODO : LOG_ERROR("Accept retry error: {}", errorCode.message());
-                return;
-            }
-
-            Accept();
-        });
+        RetryAccept();
         return;
     }
 
     m_accepter.async_accept(session->GetSocket(), [this, session](const ErrorCode& errorCode)
     {
-        if (!m_isRun.load())
-        {
-            m_sessionPool.Push(session);
-            return;
-        }
+        this->CompleteAccept(session, errorCode);
+    });
+}
 
+void BoostNetEngine::RetryAccept()
+{
+    static constexpr UINT32 kWaitTime = 100;
+    m_acceptRetryTimer.expires_after(std::chrono::milliseconds(kWaitTime));
+    m_acceptRetryTimer.async_wait([this](const ErrorCode& errorCode)
+    {
         if (errorCode)
         {
-            m_sessionPool.Push(session);
-
-            if (errorCode != boost::asio::error::operation_aborted)
-            {
-                // LOG_ERROR("Accept error: {}", errorCode.message());
-                Accept();
-            }
+            // TODO : LOG_ERROR("Accept retry error: {}", errorCode.message());
             return;
         }
 
-        session->Start();
-        Accept();
+        this->Accept();
     });
+}
+
+void BoostNetEngine::CompleteAccept(BoostSession* session, const ErrorCode& errorCode)
+{
+    if (!m_isRun.load())
+    {
+        m_sessionPool.Push(session);
+        return;
+    }
+
+    if (errorCode)
+    {
+        m_sessionPool.Push(session);
+
+        if (errorCode != boost::asio::error::operation_aborted)
+        {
+            // TODO : LOG_ERROR("Accept error: {}", errorCode.message());
+            Accept();
+        }
+        return;
+    }
+
+    session->Start();
+    Accept();
 }
 
 void BoostNetEngine::Update()

@@ -29,6 +29,8 @@ public:
 private:
     void Listen(const UINT16 port);
     void Accept();
+    void RetryAccept();
+    void CompleteAccept(BoostSession* session, const ErrorCode& errorCode);
     void Update();
 
 private:
