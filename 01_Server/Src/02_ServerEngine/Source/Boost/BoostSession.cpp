@@ -1,6 +1,6 @@
 #include "Boost/BoostSession.h"
 
-BoostSession::BoostSession(BoostNetEngineServer& netEngine, IoContext& ioContext)
+BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
     : m_socket(ioContext)
     , m_netEngine(netEngine)
     , m_recvBuffer(kBufferSize)
@@ -10,4 +10,11 @@ BoostSession::BoostSession(BoostNetEngineServer& netEngine, IoContext& ioContext
 
 void BoostSession::Start()
 {
+}
+
+void BoostSession::CloseSocket()
+{
+    boost::system::error_code errorCode;
+    m_socket.shutdown(Socket::shutdown_both, errorCode);
+    m_socket.close(errorCode);
 }

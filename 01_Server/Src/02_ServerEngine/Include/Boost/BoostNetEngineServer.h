@@ -1,20 +1,15 @@
 #pragma once
-#include "Common/INetEngineServer.h"
-#include "Boost/BoostSession.h"
-#include "DataStruct/Lock/LockStack.h"
-#include "Threading/Thread.h"
+#include "Boost/BoostNetEngine.h"
 
-class BoostNetEngineServer : public INetEngineServer
+class BoostNetEngineServer : public BoostNetEngine
 {
-    using IoContext = boost::asio::io_context;
     using Acceptor = boost::asio::ip::tcp::acceptor;
     using ErrorCode = boost::system::error_code;
-    using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
+    using BoostTimer = boost::asio::steady_timer;
 
 public:
-    static constexpr UINT32 kMaxSessionCount = 1024;
-
-    explicit BoostNetEngineServer(UINT32 threadCount = 1);
+    BoostNetEngineServer() = delete;
+    BoostNetEngineServer(UINT16 port, UINT32 sessionCount, UINT32 threadCount = 1);
     ~BoostNetEngineServer() override;
 
     BoostNetEngineServer(const BoostNetEngineServer&) = delete;
@@ -22,23 +17,16 @@ public:
     BoostNetEngineServer& operator=(const BoostNetEngineServer&) = delete;
     BoostNetEngineServer& operator=(BoostNetEngineServer&&) = delete;
 
-    void Start(UINT16 port) override;
-    void Stop() override;
+    virtual void OnStart() override;
+    virtual void OnStop() override;
 
 private:
-    void Listen(UINT16 port);
     void Accept();
     void RetryAccept();
     void CompleteAccept(BoostSession* session, const ErrorCode& errorCode);
-    void Update();
 
 private:
-    std::atomic<bool> m_isRun;
-    IoContext m_ioContext;
-    WorkGuard m_workGuard;
+    const UINT16 m_port;
     Acceptor m_accepter;
-    boost::asio::steady_timer m_acceptRetryTimer;
-    std::array<std::optional<BoostSession>, kMaxSessionCount> m_sessions;
-    LockStack<BoostSession*, kMaxSessionCount> m_sessionPool;
-    std::vector<Thread> m_threads;
+    BoostTimer m_acceptRetryTimer;
 };

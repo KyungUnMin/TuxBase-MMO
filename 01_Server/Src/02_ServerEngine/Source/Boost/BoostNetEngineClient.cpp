@@ -1,64 +1,70 @@
 #include "Boost/BoostNetEngineClient.h"
 
-BoostNetEngineClient::BoostNetEngineClient(std::string_view ip, UINT16 port)
-    : m_endpoint(boost::asio::ip::make_address(ip), port)
-    , m_isRun(false)
-    , m_workGuard(boost::asio::make_work_guard(m_ioContext))
-    , m_socket(m_ioContext)
-    , m_retryTimer(m_ioContext)
+BoostNetEngineClient::BoostNetEngineClient(std::string_view ip, UINT16 port, UINT32 sessionCount /*= 1*/, UINT32 threadCount /*= 1*/)
+    : BoostNetEngine(sessionCount, threadCount)
+    , m_endpoint(boost::asio::ip::make_address(ip), port)
+    , m_connectRetryTimer(GetIoContext())
 {
 }
 
 BoostNetEngineClient::~BoostNetEngineClient()
 {
-    Stop();
+    BoostNetEngine::Stop();
 }
 
-void BoostNetEngineClient::Start()
+void BoostNetEngineClient::OnStart()
 {
-    m_isRun.store(true);
-    Connect();
-
-    m_ioThread.Start("BoostNetEngine_Client_IO", [this]()
+    BoostSession* session = nullptr;
+    while (TryPopSession(session))
     {
-        m_ioContext.run();
+        ASSERT(session, "session is null");
+        Connect(session);
+    }
+}
+
+void BoostNetEngineClient::Connect(BoostSession* session)
+{
+    if (false == IsRunning())
+        return;
+
+    ASSERT(session, "session is null");
+    session->GetSocket().async_connect(m_endpoint, [this, session](const ErrorCode& errorCode)
+    {
+        this->CompleteConnect(session, errorCode);
     });
 }
 
-void BoostNetEngineClient::Connect()
+void BoostNetEngineClient::CompleteConnect(BoostSession* session, const ErrorCode& errorCode)
 {
-    if (!m_isRun.load())
-        return;
-
-    m_socket.async_connect(m_endpoint, [this](const ErrorCode& errorCode)
+    ASSERT(session, "session is null");
+    if (false == IsRunning())
     {
-        this->CompleteConnect(errorCode);
-    });
-}
-
-void BoostNetEngineClient::CompleteConnect(const ErrorCode& errorCode)
-{
-    if (!m_isRun.load())
+        PushSession(session);
         return;
+    }
 
     if (errorCode)
     {
-        if (errorCode != boost::asio::error::operation_aborted)
+        if (errorCode == boost::asio::error::operation_aborted)
+        {
+            PushSession(session);
+        }
+        else
         {
             // TODO : LOG_ERROR("Connect error: {}", errorCode.message());
-            RetryConnect();
+            RetryConnect(session);
         }
         return;
     }
 
-    // TODO : 연결 성공 후 처리 (세션 시작 등)
+    session->Start();
 }
 
-void BoostNetEngineClient::RetryConnect()
+void BoostNetEngineClient::RetryConnect(BoostSession* session)
 {
     static constexpr UINT32 kWaitTime = 1000;
-    m_retryTimer.expires_after(std::chrono::milliseconds(kWaitTime));
-    m_retryTimer.async_wait([this](const ErrorCode& errorCode)
+    m_connectRetryTimer.expires_after(std::chrono::milliseconds(kWaitTime));
+    m_connectRetryTimer.async_wait([this, session](const ErrorCode& errorCode)
     {
         if (errorCode)
         {
@@ -66,25 +72,12 @@ void BoostNetEngineClient::RetryConnect()
             return;
         }
 
-        m_socket.close();
-        this->Connect();
+        session->CloseSocket();
+        this->Connect(session);
     });
 }
 
-void BoostNetEngineClient::Stop()
+void BoostNetEngineClient::OnStop()
 {
-    bool expected = true;
-    bool desired = false;
-    if (false == m_isRun.compare_exchange_strong(expected, desired))
-        return;
-
-    m_retryTimer.cancel();
-
-    ErrorCode errorCode;
-    m_socket.shutdown(Socket::shutdown_both, errorCode);
-    m_socket.close(errorCode);
-
-    m_ioContext.stop();
-    m_workGuard.reset();
-    m_ioThread.Join();
+    m_connectRetryTimer.cancel();
 }

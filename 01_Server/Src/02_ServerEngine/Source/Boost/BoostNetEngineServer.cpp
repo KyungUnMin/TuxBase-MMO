@@ -1,46 +1,34 @@
 #include "Boost/BoostNetEngineServer.h"
 
-BoostNetEngineServer::BoostNetEngineServer(UINT32 threadCount /*= 1*/)
-    : m_isRun(false)
-    , m_accepter(m_ioContext)
-    , m_workGuard(boost::asio::make_work_guard(m_ioContext))
-    , m_acceptRetryTimer(m_ioContext)
-    , m_threads(threadCount)
+BoostNetEngineServer::BoostNetEngineServer(UINT16 port, UINT32 sessionCount, UINT32 threadCount /*=1*/)
+    : BoostNetEngine(sessionCount, threadCount)
+    , m_port(port)
+    , m_accepter(GetIoContext())
+    , m_acceptRetryTimer(GetIoContext())
 {
-    for (UINT32 i = 0; i < kMaxSessionCount; ++i)
-    {
-        BoostSession& session = m_sessions[i].emplace(*this, m_ioContext);
-        m_sessionPool.Push(&session);
-    }
 }
 
 BoostNetEngineServer::~BoostNetEngineServer()
 {
-    Stop();
+    BoostNetEngine::Stop();
 }
 
-void BoostNetEngineServer::Start(UINT16 port)
+void BoostNetEngineServer::OnStart()
 {
-    m_isRun.store(true);
-    Listen(port);
-    Update();
-}
-
-void BoostNetEngineServer::Listen(UINT16 port)
-{
-    m_accepter.open(boost::asio::ip::tcp::v4());
-    m_accepter.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
+    using BoostTcp = boost::asio::ip::tcp;
+    m_accepter.open(BoostTcp::v4());
+    m_accepter.bind(BoostTcp::endpoint(BoostTcp::v4(), m_port));
     m_accepter.listen();
     Accept();
 }
 
 void BoostNetEngineServer::Accept()
 {
-    if (!m_isRun.load())
+    if (false == IsRunning())
         return;
 
     BoostSession* session = nullptr;
-    if (false == m_sessionPool.TryPop(session))
+    if (false == TryPopSession(session))
     {
         RetryAccept();
         return;
@@ -70,16 +58,15 @@ void BoostNetEngineServer::RetryAccept()
 
 void BoostNetEngineServer::CompleteAccept(BoostSession* session, const ErrorCode& errorCode)
 {
-    if (!m_isRun.load())
+    if (false == IsRunning())
     {
-        m_sessionPool.Push(session);
+        PushSession(session);
         return;
     }
 
     if (errorCode)
     {
-        m_sessionPool.Push(session);
-
+        PushSession(session);
         if (errorCode != boost::asio::error::operation_aborted)
         {
             // TODO : LOG_ERROR("Accept error: {}", errorCode.message());
@@ -92,31 +79,8 @@ void BoostNetEngineServer::CompleteAccept(BoostSession* session, const ErrorCode
     Accept();
 }
 
-void BoostNetEngineServer::Update()
+void BoostNetEngineServer::OnStop()
 {
-    for (UINT32 i = 0; i < m_threads.size(); ++i)
-    {
-        m_threads[i].Start("BoostNetEngine_IO_Worker_" + std::to_string(i), [this]()
-        {
-            m_ioContext.run();
-        });
-    }
-}
-
-void BoostNetEngineServer::Stop()
-{
-    bool expected = true;                                            // 기대값
-    bool desired = false;                                            // 변경값
-    if (false == m_isRun.compare_exchange_strong(expected, desired)) // 변경되었다면 true 반환
-        return;
-
     m_accepter.close();
     m_acceptRetryTimer.cancel();
-    m_ioContext.stop();
-    m_workGuard.reset();
-
-    for (Thread& thread : m_threads)
-    {
-        thread.Join();
-    }
-}
+}

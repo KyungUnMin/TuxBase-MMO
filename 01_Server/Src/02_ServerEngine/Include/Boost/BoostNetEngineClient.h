@@ -1,17 +1,15 @@
 #pragma once
-#include "Common/INetEngineClient.h"
-#include "Threading/Thread.h"
+#include "Boost/BoostNetEngine.h"
 
-class BoostNetEngineClient : public INetEngineClient
+class BoostNetEngineClient : public BoostNetEngine
 {
-    using IoContext = boost::asio::io_context;
-    using Socket = boost::asio::ip::tcp::socket;
     using Endpoint = boost::asio::ip::tcp::endpoint;
     using ErrorCode = boost::system::error_code;
-    using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
+    using BoostTimer = boost::asio::steady_timer;
 
 public:
-    BoostNetEngineClient(std::string_view ip, UINT16 port);
+    BoostNetEngineClient() = delete;
+    BoostNetEngineClient(std::string_view ip, UINT16 port, UINT32 sessionCount = 1, UINT32 threadCount = 1);
     ~BoostNetEngineClient() override;
 
     BoostNetEngineClient(const BoostNetEngineClient&) = delete;
@@ -19,20 +17,15 @@ public:
     BoostNetEngineClient& operator=(const BoostNetEngineClient&) = delete;
     BoostNetEngineClient& operator=(BoostNetEngineClient&&) = delete;
 
-    void Start() override;
-    void Stop() override;
+    virtual void OnStart() override;
+    virtual void OnStop() override;
 
 private:
-    void Connect();
-    void CompleteConnect(const ErrorCode& errorCode);
-    void RetryConnect();
+    void Connect(BoostSession* session);
+    void CompleteConnect(BoostSession* session, const ErrorCode& errorCode);
+    void RetryConnect(BoostSession* session);
 
 private:
     Endpoint m_endpoint;
-    std::atomic<bool> m_isRun;
-    IoContext m_ioContext;
-    WorkGuard m_workGuard;
-    Socket m_socket;
-    boost::asio::steady_timer m_retryTimer;
-    Thread m_ioThread;
+    BoostTimer m_connectRetryTimer;
 };
