@@ -17,6 +17,7 @@ void BoostNetEngineServer::OnStart()
 {
     using BoostTcp = boost::asio::ip::tcp;
     m_accepter.open(BoostTcp::v4());
+    m_accepter.set_option(BoostTcp::acceptor::reuse_address(true));
     m_accepter.bind(BoostTcp::endpoint(BoostTcp::v4(), m_port));
     m_accepter.listen();
     Accept();
