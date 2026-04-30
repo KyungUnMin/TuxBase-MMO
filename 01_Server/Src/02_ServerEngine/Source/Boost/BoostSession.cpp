@@ -1,15 +1,15 @@
 #include "Boost/BoostSession.h"
+#include <iostream>
 
 BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
     : m_socket(ioContext)
     , m_netEngine(netEngine)
-    , m_recvBuffer(kBufferSize)
-    , m_sendBuffer(kBufferSize)
 {
 }
 
 void BoostSession::Start()
 {
+    std::cout << "BoostSessionStart" << std::endl;
 }
 
 void BoostSession::CloseSocket()

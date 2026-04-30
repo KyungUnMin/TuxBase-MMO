@@ -1,20 +1,14 @@
 #include "DataStruct/RingBuffer/RingBuffer.h"
 #include "Verify/Assert.h"
 
-RingBuffer::RingBuffer(UINT32 bufferSize)
+RingBuffer::RingBuffer()
     : m_isActiveWriter(false)
     , m_isActiveReader(false)
     , m_isFull(false)
-    , m_buffer(std::make_unique<char[]>(bufferSize))
     , m_readCursor(0)
     , m_writeCursor(0)
-    , m_tailCursor(bufferSize)
-    , kCapacity(bufferSize)
+    , m_tailCursor(kCapacity)
 {
-    ASSERT(0 < bufferSize, "Ring buffer size is 0");
-#ifdef _DEBUG
-    memset(bufferSize.get(), 0, bufferSize);
-#endif
 }
 
 RingBuffer::~RingBuffer()
@@ -41,7 +35,7 @@ RingBufferWriter RingBuffer::CreateWriter(UINT32 writeSize)
         if (writeSize <= kCapacity - m_writeCursor) // if (m_writeCursor + writeSize <= kCapacity) 와 같지만 오버플로 방지
         {
             m_isActiveWriter = true;
-            return RingBufferWriter(this, m_buffer.get() + m_writeCursor, writeSize);
+            return RingBufferWriter(this, m_buffer.data() + m_writeCursor, writeSize);
         }
 
         // 꼬리 공간 부족. 꼬리 건너뛰고 앞에서 시작
@@ -50,7 +44,7 @@ RingBufferWriter RingBuffer::CreateWriter(UINT32 writeSize)
             m_tailCursor = m_writeCursor;
             m_writeCursor = 0;
             m_isActiveWriter = true;
-            return RingBufferWriter(this, m_buffer.get(), writeSize);
+            return RingBufferWriter(this, m_buffer.data(), writeSize);
         }
     }
 
@@ -61,7 +55,7 @@ RingBufferWriter RingBuffer::CreateWriter(UINT32 writeSize)
         if (writeSize <= kRemainSize)
         {
             m_isActiveWriter = true;
-            return RingBufferWriter(this, m_buffer.get() + m_writeCursor, writeSize);
+            return RingBufferWriter(this, m_buffer.data() + m_writeCursor, writeSize);
         }
     }
 
@@ -103,7 +97,7 @@ RingBufferReader RingBuffer::CreateReader(UINT32 readSize)
     }
 
     m_isActiveReader = true;
-    return RingBufferReader(this, m_buffer.get() + m_readCursor, readSize);
+    return RingBufferReader(this, m_buffer.data() + m_readCursor, readSize);
 }
 
 RingBufferWriter RingBuffer::CreateAllWriter()
@@ -132,7 +126,7 @@ RingBufferWriter RingBuffer::CreateAllWriter()
     }
 
     m_isActiveWriter = true;
-    return RingBufferWriter(this, m_buffer.get() + m_writeCursor, contiguousSize);
+    return RingBufferWriter(this, m_buffer.data() + m_writeCursor, contiguousSize);
 }
 
 RingBufferReader RingBuffer::CreateAllReader()
@@ -168,7 +162,7 @@ RingBufferReader RingBuffer::CreateAllReader()
     }
 
     m_isActiveReader = true;
-    return RingBufferReader(this, m_buffer.get() + m_readCursor, contiguousSize);
+    return RingBufferReader(this, m_buffer.data() + m_readCursor, contiguousSize);
 }
 
 

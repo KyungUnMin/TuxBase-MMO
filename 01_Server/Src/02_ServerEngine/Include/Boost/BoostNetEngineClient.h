@@ -17,8 +17,8 @@ public:
     BoostNetEngineClient& operator=(const BoostNetEngineClient&) = delete;
     BoostNetEngineClient& operator=(BoostNetEngineClient&&) = delete;
 
-    virtual void OnStart() override;
-    virtual void OnStop() override;
+    void OnStart() override;
+    void OnStop() override;
 
 private:
     void Connect(BoostSession* session);

@@ -1,20 +1,17 @@
 #pragma once
-#include "Common/ISession.h"
 #include "DataStruct/RingBuffer/RingBuffer.h"
 
 class BoostNetEngine;
 
-class BoostSession : public ISession
+class BoostSession
 {
-    static constexpr UINT32 kBufferSize = 1024 * 16;
-
     using Socket = boost::asio::ip::tcp::socket;
     using IoContext = boost::asio::io_context;
 
 public:
     BoostSession() = delete;
     BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
-    ~BoostSession() override = default;
+    ~BoostSession() = default;
 
     BoostSession(const BoostSession&) = delete;
     BoostSession(BoostSession&&) = delete;

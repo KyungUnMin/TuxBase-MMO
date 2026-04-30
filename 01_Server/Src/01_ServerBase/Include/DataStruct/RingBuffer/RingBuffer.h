@@ -9,8 +9,9 @@ class RingBuffer
     friend class RingBufferReader;
 
 public:
-    RingBuffer() = delete;
-    RingBuffer(UINT32 bufferSize);
+    static constexpr UINT32 kCapacity = 1024 * 16;
+
+    RingBuffer();
     ~RingBuffer();
 
     RingBuffer(const RingBuffer&) = delete;
@@ -39,9 +40,8 @@ private:
     bool m_isActiveWriter;
     bool m_isActiveReader;
     bool m_isFull;
-    UPtr<char[]> m_buffer;
+    std::array<char, kCapacity> m_buffer;
     UINT32 m_readCursor;
     UINT32 m_writeCursor;
     UINT32 m_tailCursor;
-    const UINT32 kCapacity;
 };

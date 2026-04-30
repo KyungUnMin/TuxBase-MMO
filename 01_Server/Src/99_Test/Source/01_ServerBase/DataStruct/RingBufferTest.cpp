@@ -46,11 +46,7 @@ private:
 class FakeSession
 {
 public:
-    FakeSession()
-        : m_sendBuffer(64)
-        , m_recvBuffer(64)
-    {
-    }
+    FakeSession() = default;
     ~FakeSession() = default;
 
     FakeSession(const FakeSession&) = delete;
@@ -142,16 +138,21 @@ TEST(RingBufferTest, NetIO)
 
 TEST(RingBufferTest, Wrap)
 {
-    RingBuffer rb(32);
+    RingBuffer rb;
+    const UINT32 kQuarter = RingBuffer::kCapacity / 4; // 4096
+    const UINT32 kHalf = RingBuffer::kCapacity / 2;    // 8192
+    const UINT32 kThreeQuarter = kQuarter * 3;         // 12288
 
-    // 24바이트 쓰기 -> 16바이트 읽기
+    // 3/4 쓰기 -> 1/2 읽기
+    // [_][_][_][_] -> [1][1][1][_] -> [_][_][1][_]
+    // [RW][_][_][_] -> [R][→][→][W] -> [_][_][R][W]
     {
-        RingBufferWriter w = rb.CreateWriter(24);
+        RingBufferWriter w = rb.CreateWriter(kThreeQuarter);
         ASSERT_TRUE(w.IsValid());
         memset(w.GetPtr(), 0xFF, w.GetSize());
         w.Commit();
 
-        RingBufferReader r = rb.CreateReader(16);
+        RingBufferReader r = rb.CreateReader(kHalf);
         ASSERT_TRUE(r.IsValid());
         r.Commit();
     }
@@ -165,16 +166,20 @@ TEST(RingBufferTest, Wrap)
         r.GiveUp();
     }
 
-    // 16바이트 쓰기
+    // 1/2 쓰기 -> 꼬리(1/4)보다 크므로 랩 발생(앞쪽부터 작성)
+    // [_][_][1][_] -> [2][2][1][_]
+    // [_][_][R][W] -> [→][→][WR]![_]
     UINT32 tailSkipDataSize = 0;
     {
-        RingBufferWriter w = rb.CreateWriter(16);
+        RingBufferWriter w = rb.CreateWriter(kHalf);
         ASSERT_TRUE(w.IsValid());
         memset(w.GetPtr(), 0xFF, w.GetSize());
         tailSkipDataSize = w.GetSize();
     }
 
-    // 모든 데이터를 읽으려고 했으나, 연속된 데이터만 읽음(8바이트)
+    // 모든 데이터를 읽으려고 했으나, 연속된 데이터만 읽음(1/4)
+    // [2][2][1][_] -> [2][2][_][_]
+    // [→][→][WR]![_] -> [R][→][W][_]
     {
         RingBufferReader r = rb.CreateAllReader();
         ASSERT_TRUE(r.IsValid());
@@ -182,6 +187,8 @@ TEST(RingBufferTest, Wrap)
     }
 
     // 나머지 읽기
+    // [2][2][_][_] -> [_][_][_][_]
+    // [R][→][W][_] -> [_][_][RW][_]
     {
         RingBufferReader r = rb.CreateAllReader();
         ASSERT_TRUE(r.IsValid());
@@ -189,37 +196,49 @@ TEST(RingBufferTest, Wrap)
     }
 }
 
-TEST(RingBufferTest, Wrap_ResetCursor) // DEBUG 전용
+TEST(RingBufferTest, Wrap_ResetCursor)
 {
-    RingBuffer rb(32);
+    RingBuffer rb;
+    const UINT32 kHalf = RingBuffer::kCapacity / 2;    // 8192
+    const UINT32 kQuarter = RingBuffer::kCapacity / 4; // 4096
 
-    // 24바이트 쓰기
+    // 1/2 쓰기 (0xFF)
+    // [_][_][_][_] -> [F][F][_][_]
+    // [RW][_][_][_] -> [R][→][W][_]
     {
-        RingBufferWriter w = rb.CreateWriter(24);
+        RingBufferWriter w = rb.CreateWriter(kHalf);
         ASSERT_TRUE(w.IsValid());
         memset(w.GetPtr(), 0xFF, w.GetSize());
     }
 
-    // 24바이트 읽기 (readCursor == writeCursor : 두 커서 모두 초기화)
+    // 1/2 읽기 (readCursor == writeCursor → 두 커서 모두 0으로 리셋)
+    // [F][F][_][_] -> [f][f][_][_] // f = 읽었지만 메모리에 잔존
+    // [R][→][W][_] -> [RW][_][_][_]
     {
-        RingBufferReader r = rb.CreateReader(24);
+        RingBufferReader r = rb.CreateReader(kHalf);
         ASSERT_TRUE(r.IsValid());
     }
 
-    // 12바이트 쓰기
+    // 1/4 쓰기 (0으로 채움, 리셋된 위치 0부터 시작)
+    // [f][f][_][_] -> [0][f][_][_]
+    // [RW][_][_][_] -> [R][W][_][_]
     {
-        RingBufferWriter w = rb.CreateWriter(12);
+        RingBufferWriter w = rb.CreateWriter(kQuarter);
         ASSERT_TRUE(w.IsValid());
         memset(w.GetPtr(), 0, w.GetSize());
     }
 
-    // 12바이트 커서만 이동
+    // 1/4 만큼 write 커서만 이동 (기존 0xFF 데이터 유지)
+    // [0][f][_][_] -> [0][f][_][_]
+    // [R][W][_][_] -> [R][→][W][_]
     {
-        RingBufferWriter w = rb.CreateWriter(12);
+        RingBufferWriter w = rb.CreateWriter(kQuarter);
         ASSERT_TRUE(w.IsValid());
     }
 
-    // 버퍼 맨 처음부터 작성되었는지 확인
+    // 검증: 커서 리셋 후 위치 0부터 작성됐는지 확인 (앞 = 0x00, 뒤 = 0xFF)
+    // [0][f][_][_] -> [o][f][_][_] // o,f = 읽었지만 메모리에 잔존
+    // [R][→][W][_] -> [RW][_][_][_]
     {
         RingBufferReader r = rb.CreateAllReader();
         ASSERT_TRUE(r.IsValid());

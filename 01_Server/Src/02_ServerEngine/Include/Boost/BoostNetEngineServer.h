@@ -17,8 +17,8 @@ public:
     BoostNetEngineServer& operator=(const BoostNetEngineServer&) = delete;
     BoostNetEngineServer& operator=(BoostNetEngineServer&&) = delete;
 
-    virtual void OnStart() override;
-    virtual void OnStop() override;
+    void OnStart() override;
+    void OnStop() override;
 
 private:
     void Accept();
