@@ -1,0 +1,34 @@
+{
+    "name": "TuxBase MMO Dev Environment - Server",
+    "dockerComposeFile": [
+        "../compose.yml"
+    ],
+    "service": "mainserver",
+    "workspaceFolder": "/root/src",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "llvm-vs-code-extensions.vscode-clangd",
+                "shardulm94.trailing-spaces",
+                "msfukui.eof-mark",
+                "eamodio.gitlens",
+                "matepek.vscode-catch2-test-adapter",
+                "oderwat.indent-rainbow"
+            ],
+            "settings": {
+                "editor.tabSize": 4,
+                "editor.detectIndentation": false,
+                "editor.guides.indentation": false,
+                "editor.formatOnSave": false,
+                "cmake.buildDirectory": "${workspaceFolder}/build/server/Linux",
+                "C_Cpp.intelliSenseEngine": "disabled",
+                "clangd.arguments": [
+                    "--compile-commands-dir=build/server/Linux",
+                    "--background-index"
+                ]
+            }
+        }
+    }
+}

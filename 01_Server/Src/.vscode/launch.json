@@ -5,7 +5,7 @@
             "name": "GameServer (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Linux/03_ServerApp/GameServer",
+            "program": "${workspaceFolder}/build/server/Linux/03_ServerApp/GameServer",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -19,13 +19,13 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: Build"
+            "preLaunchTask": "CMake: Build Server"
         },
         {
             "name": "DummyClient (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Linux/04_DummyClient/DummyClient",
+            "program": "${workspaceFolder}/build/client/Linux/04_DummyClient/DummyClient",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -39,13 +39,13 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: Build"
+            "preLaunchTask": "CMake: Build Client"
         },
         {
             "name": "Google Tests (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Linux/99_Test/Tests",
+            "program": "${workspaceFolder}/build/server/Linux/99_Test/Tests",
             "args": [
                 "--gtest_color=yes"
             ],
@@ -61,16 +61,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: Build"
-        }
-    ],
-    "compounds": [
-        {
-            "name": "GameServer + DummyClient",
-            "configurations": [
-                "GameServer (gdb)",
-                "DummyClient (gdb)"
-            ]
+            "preLaunchTask": "CMake: Build Server"
         }
     ]
 }

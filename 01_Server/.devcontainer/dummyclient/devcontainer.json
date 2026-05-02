@@ -1,9 +1,8 @@
 {
-    "name": "TuxBase MMO Dev Environment",
-    "dockerComposeFile": "compose.yml",
-    "service": "mainserver",
+    "name": "TuxBase MMO Dev Environment - Client",
+    "dockerComposeFile": ["../compose.yml"],
+    "service": "dummyclient",
     "workspaceFolder": "/root/src",
-    "initializeCommand": "docker compose -f .devcontainer/compose.yml build",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -21,9 +20,10 @@
                 "editor.detectIndentation": false,
                 "editor.guides.indentation": false,
                 "editor.formatOnSave": false,
+                "cmake.buildDirectory": "${workspaceFolder}/build/client/Linux",
                 "C_Cpp.intelliSenseEngine": "disabled",
                 "clangd.arguments": [
-                    "--compile-commands-dir=Build/Linux",
+                    "--compile-commands-dir=build/client/Linux",
                     "--background-index"
                 ]
             }

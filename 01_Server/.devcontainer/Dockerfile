@@ -46,6 +46,3 @@ ENV PATH="${VCPKG_ROOT}:${PATH}"
 
 # 소스 마운트 디렉터리를 기본 작업 디렉터리로 설정
 WORKDIR /root/src
-
-# 컨테이너 유지 (개발용)
-ENTRYPOINT ["/bin/bash", "-c", "sleep infinity"]

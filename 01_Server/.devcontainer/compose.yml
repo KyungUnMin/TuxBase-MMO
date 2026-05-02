@@ -6,5 +6,13 @@ services:
       - "13000:13000"
     volumes:
       - ../Src:/root/src
-    tty: true
-    stdin_open: true
+    command: /bin/bash /root/src/98_Scripts/Entrypoint.sh server
+
+  dummyclient:
+    container_name: tuxbase-dummyclient
+    build: .
+    volumes:
+      - ../Src:/root/src
+    depends_on:
+      - mainserver
+    command: /bin/bash /root/src/98_Scripts/Entrypoint.sh client

@@ -1,44 +1,77 @@
 {
     "version": "2.0.0",
-    "tasks": 
-    [
+    "tasks": [
         {
-            "label": "CMake: Configure",
+            "label": "CMake: Configure Server",
             "type": "shell",
             "command": "cmake",
-            "args": 
-            [
-                "-S",".",
-                "-B","build/Linux",
-                "-G","Ninja",
+            "args": [
+                "-S", ".",
+                "-B", "build/server/Linux",
+                "-G", "Ninja",
                 "-DCMAKE_BUILD_TYPE=Debug"
             ],
             "group": "build",
             "problemMatcher": []
         },
         {
-            "label": "CMake: Build",
+            "label": "CMake: Build Server",
             "type": "shell",
             "command": "cmake",
             "args": [
-                "--build","build/Linux","-j"
+                "--build", "build/server/Linux", "-j"
             ],
             "group": "build",
-            "problemMatcher": 
-            [
+            "problemMatcher": [
                 "$gcc"
             ]
         },
         {
-            "label": "CMake: Full Build",
-            "dependsOn": 
-            [
-                "CMake: Configure",
-                "CMake: Build"
+            "label": "CMake: Configure Client",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S", ".",
+                "-B", "build/client/Linux",
+                "-G", "Ninja",
+                "-DCMAKE_BUILD_TYPE=Debug"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake: Build Client",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "build/client/Linux", "-j"
+            ],
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "CMake: Full Build Server",
+            "dependsOn": [
+                "CMake: Configure Server",
+                "CMake: Build Server"
             ],
             "dependsOrder": "sequence",
-            "group": 
-            {
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake: Full Build Client",
+            "dependsOn": [
+                "CMake: Configure Client",
+                "CMake: Build Client"
+            ],
+            "dependsOrder": "sequence",
+            "group": {
                 "kind": "build",
                 "isDefault": true
             },
