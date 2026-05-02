@@ -12,6 +12,7 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 # 빌드 제외 파일 목록
 set(IGNORE_SRC_FILES
     "BackTrace_(linux|win32)\\.cpp$"
+    "SignalHandler_(linux|window)\\.cpp$"
     "Profile\\.(cpp|h)$"
 )
 foreach(IGNORE_SRC_FILE IN LISTS IGNORE_SRC_FILES)
@@ -22,10 +23,12 @@ endforeach()
 if(WIN32)
     list(APPEND SRC_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_win32.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/SignalHandler_window.cpp"
     )
 elseif(UNIX)
     list(APPEND SRC_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/BackTrace_linux.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Verify/SignalHandler_linux.cpp"
     )
 endif()
 
