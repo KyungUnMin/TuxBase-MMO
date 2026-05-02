@@ -19,7 +19,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: Full Build"
+            "preLaunchTask": "CMake: Build"
         },
         {
             "name": "DummyClient (gdb)",
@@ -39,7 +39,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: Full Build"
+            "preLaunchTask": "CMake: Build"
         },
         {
             "name": "Google Tests (gdb)",
@@ -61,7 +61,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: Full Build"
+            "preLaunchTask": "CMake: Build"
         }
     ],
     "compounds": [
