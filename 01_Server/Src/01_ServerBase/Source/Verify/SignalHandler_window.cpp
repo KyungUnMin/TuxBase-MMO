@@ -6,6 +6,10 @@
 
 std::atomic<bool> SignalHandler::m_shutdownRequested = true;
 
+/* ==================================================================
+윈도우쪽은 나중에 생각해보자
+================================================================== */
+
 namespace
 {
     BOOL WINAPI ConsoleCtrlHandler(DWORD ctrlType)
