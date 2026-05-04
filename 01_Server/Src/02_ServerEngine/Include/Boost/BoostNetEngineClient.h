@@ -9,7 +9,7 @@ class BoostNetEngineClient : public BoostNetEngine
 
 public:
     BoostNetEngineClient() = delete;
-    BoostNetEngineClient(std::string_view ip, UINT16 port, UINT32 sessionCount = 1, UINT32 threadCount = 1);
+    BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 sessionCount = 1, UINT32 threadCount = 1);
     ~BoostNetEngineClient() override;
 
     BoostNetEngineClient(const BoostNetEngineClient&) = delete;
