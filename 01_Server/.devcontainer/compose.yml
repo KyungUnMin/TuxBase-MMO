@@ -6,13 +6,15 @@ services:
       - "13000:13000"
     volumes:
       - ../Src:/root/src
-    command: /bin/bash /root/src/98_Scripts/Entrypoint.sh server
+      - ../../03_Share:/root/share
+    command: sleep infinity
 
   dummyclient:
     container_name: tuxbase-dummyclient
     build: .
     volumes:
       - ../Src:/root/src
+      - ../../03_Share:/root/share
     depends_on:
       - mainserver
-    command: /bin/bash /root/src/98_Scripts/Entrypoint.sh client
+    command: sleep infinity

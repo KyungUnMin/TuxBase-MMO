@@ -32,6 +32,21 @@ elseif(UNIX)
     )
 endif()
 
+# Protobuf 설정
+find_package(Protobuf CONFIG REQUIRED)
+
+# 컨테이너 환경의 마운트 경로(/root/share)를 기본으로 탐색하되 없으면 호스트 경로 탐색
+if(EXISTS "/root/share/Protocol")
+    file(GLOB PROTO_FILES "/root/share/Protocol/*.proto")
+else()
+    file(GLOB PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../03_Share/Protocol/*.proto")
+endif()
+
+if(PROTO_FILES)
+    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
+    list(APPEND SRC_FILES ${PROTO_SRCS} ${PROTO_HDRS})
+endif()
+
 add_library(ServerBase STATIC
     ${SRC_FILES}
 )
@@ -40,11 +55,12 @@ add_library(ServerBase STATIC
 target_include_directories(ServerBase
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/Include
+        ${CMAKE_CURRENT_BINARY_DIR} # Protobuf가 생성한 .pb.h 파일(build 폴더 내)을 include 하기 위함
 )
 
 # vcpkg에 설치한 라이브러리 링크
 find_package(fmt CONFIG REQUIRED)
-target_link_libraries(ServerBase PUBLIC fmt::fmt)
+target_link_libraries(ServerBase PUBLIC fmt::fmt protobuf::libprotobuf)
 
 # 플랫폼별 링크 라이브러리
 if(WIN32)
