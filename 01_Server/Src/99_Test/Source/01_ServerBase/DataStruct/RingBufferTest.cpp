@@ -1,6 +1,18 @@
 #include <gtest/gtest.h>
 #include "DataStruct/RingBuffer/RingBuffer.h"
-#include "Network/PacketHeader.h"
+
+#pragma pack(push, 1)
+struct DummyPacketHeader
+{
+    UINT16 m_size;
+    UINT16 m_id;
+};
+
+struct DummyPacket : public DummyPacketHeader
+{
+    UINT32 m_sequence;
+};
+#pragma pack(pop)
 
 class FakeSocket
 {
@@ -120,9 +132,9 @@ TEST(RingBufferTest, NetIO)
     // 소켓 버퍼 -> 링버퍼 -> 컨텐츠
     {
         session.Recv();
-        RingBufferReader headerReader = session.FetchRecvBuffer<PacketHeader>();
+        RingBufferReader headerReader = session.FetchRecvBuffer<DummyPacketHeader>();
         ASSERT_TRUE(headerReader.IsValid());
-        const PacketHeader& packetHeader = headerReader.As<PacketHeader>();
+        const DummyPacketHeader& packetHeader = headerReader.As<DummyPacketHeader>();
         const UINT16 packetSize = packetHeader.m_size;
         const UINT16 packetID = packetHeader.m_id;
         headerReader.GiveUp();

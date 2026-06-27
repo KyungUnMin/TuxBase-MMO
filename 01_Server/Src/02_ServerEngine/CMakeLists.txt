@@ -21,10 +21,12 @@ target_include_directories(ServerEngine
 
 #boost 라이브러리 추가
 find_package(Boost CONFIG REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
 target_link_libraries(ServerEngine
     PUBLIC
         ServerBase
         Boost::headers
+        protobuf::libprotobuf
 )
 
 # PCH 설정

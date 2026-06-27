@@ -2,6 +2,12 @@ syntax = "proto3";
 
 package Protocol;
 
+enum PacketId {
+    PACKET_ID_NONE      = 0;
+    C2S_LOGIN           = 1001;
+    S2C_LOGIN_RESPONSE  = 1002;
+}
+
 message C2S_Login {
     string user_id = 1;
     string password = 2;

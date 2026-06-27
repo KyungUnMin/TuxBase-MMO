@@ -1,12 +1,14 @@
 #pragma once
 #include "Boost/BoostSession.h"
-#include "DataStruct/Lock/LockStack.h"
+#include "DataStruct/LockBase/LockStack.h"
 #include "Threading/Thread.h"
+#include "EngineInterface/INetEngine.h"
 
-class BoostNetEngine
+class BoostNetEngine : public INetEngine
 {
     using IoContext = boost::asio::io_context;
     using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
+    class ISession;
 
 public:
     BoostNetEngine() = delete;
@@ -20,6 +22,10 @@ public:
 
     void Start();
     void Stop();
+    ISession* FindSession(UINT64 serialId) override
+    {
+        // TODO : 나중에 만들자~
+    }
 
 protected:
     virtual void OnStart() = 0;
