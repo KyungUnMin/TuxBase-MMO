@@ -2,8 +2,10 @@
 
 ## 1. 개요
 
-네트워크 송수신 데이터를 저장하는 **원형 버퍼(Circular Buffer)** 구현체.
-**Zero-Copy** 읽기/쓰기를 위해 Scatter-Gather 방식의 RAII 핸들(`RingBufferWriter`, `RingBufferReader`)을 제공한다.
+네트워크 송수신 데이터를 저장하는 **고정 크기(컴파일 타임 `kCapacity`) 원형 버퍼(Circular Buffer)** 구현체.
+**Zero-Copy** 접근을 위한 RAII 핸들(`RingBufferWriter`, `RingBufferReader`)을 제공한다.
+
+각 예약(reserve)은 항상 버퍼 안의 **연속된 단일 구간**으로만 반환된다. 즉, 하나의 예약이 버퍼 끝과 처음에 걸쳐 두 조각으로 쪼개지는 경우는 없다 (Scatter-Gather 방식이 아니다). 꼬리 공간이 부족하면 그 경계를 `m_tailCursor`에 기록해두고 앞쪽(index 0)으로 건너뛰어 쓰기를 이어가는 **tail-skip 방식**을 사용한다.
 
 ---
 
@@ -12,66 +14,63 @@
 ```mermaid
 classDiagram
     class RingBuffer {
+        +kCapacity : UINT32$
         -bool m_isActiveWriter
         -bool m_isActiveReader
-        -UPtr~char[]~ m_buffer
+        -bool m_isFull
+        -array~char, kCapacity~ m_buffer
         -UINT32 m_readCursor
         -UINT32 m_writeCursor
-        -const UINT32 kCapacity
-        +ReserveWrite(UINT32) RingBufferWriter
-        +CommitWrite(RingBufferWriter&)
-        +ReserveRead(UINT32) RingBufferReader
-        +CommitRead(RingBufferReader&)
-        +GetWritableSize() UINT32
-        +GetReadableSize() UINT32
-        +Read(void*, UINT32) UINT32
-        +Peek(void*, UINT32) UINT32
-        +IsEmpty() bool
-        +IsFull() bool
-        +Clear()
-        -GetWritableChunkSizes() Chunk
-        -GetReadableChunkSizes() Chunk
+        -UINT32 m_tailCursor
+        +CreateWriter(UINT32) RingBufferWriter
+        +CreateReader(UINT32) RingBufferReader
+        +CreateAllWriter() RingBufferWriter
+        +CreateAllReader() RingBufferReader
+        -CommitWrite(RingBufferWriter&, UINT32)
+        -CommitRead(RingBufferReader&, UINT32)
+        -GiveUpWriter(RingBufferWriter&)
+        -GiveUpReader(RingBufferReader&)
+        -IsEmpty() bool
+        -Clear()
     }
 
     class RingBufferWriter {
         -RingBuffer* m_owner
-        -void* m_firstPtr
-        -UINT32 m_firstSize
-        -void* m_secondPtr
-        -UINT32 m_secondSize
-        -UINT32 m_totalSize
+        -void* m_ptr
+        -UINT32 m_size
         +IsValid() bool
-        +IsWrapped() bool
-        +As~T~() T*
-        +WriteData(const void*, UINT32) UINT32
-        +~RingBufferWriter() ※ RAII CommitWrite
+        +GetPtr~T~(UINT32 offset) T*
+        +GetSize() UINT32
+        +As~T~() T&
+        +Commit(UINT32)
+        +GiveUp()
+        +~RingBufferWriter() ※ RAII 자동 Commit
     }
 
     class RingBufferReader {
         -RingBuffer* m_owner
-        -const void* m_firstPtr
-        -UINT32 m_firstSize
-        -const void* m_secondPtr
-        -UINT32 m_secondSize
-        -UINT32 m_totalSize
+        -const void* m_ptr
+        -UINT32 m_size
         +IsValid() bool
-        +IsWrapped() bool
-        +As~T~() const T*
-        +GetFirstPtr() const void*
-        +GetSecondPtr() const void*
-        +~RingBufferReader() ※ RAII CommitRead
+        +GetPtr~T~(UINT32 offset) const T*
+        +GetSize() UINT32
+        +As~T~() const T&
+        +Commit(UINT32)
+        +GiveUp()
+        +~RingBufferReader() ※ RAII 자동 Commit
     }
 
-    RingBuffer --> RingBufferWriter : creates (friend)
-    RingBuffer --> RingBufferReader : creates (friend)
-    RingBufferWriter --> RingBuffer : m_owner (CommitWrite on ~dtor)
+    RingBuffer --> RingBufferWriter : creates (friend, private ctor)
+    RingBuffer --> RingBufferReader : creates (friend, private ctor)
+    RingBufferWriter --> RingBuffer : m_owner (Commit → CommitWrite on ~dtor)
     RingBufferReader --> RingBuffer : m_owner (CommitRead on ~dtor)
 ```
 
 **핵심 관계:**
 - `RingBuffer`만이 Writer/Reader를 생성할 수 있다 (생성자가 `private`, `friend` 관계).
-- Writer/Reader는 소멸 시 자동으로 `CommitWrite`/`CommitRead`를 호출한다 (RAII).
-- 복사 금지, 이동만 허용 (소유권 이전).
+- 예약은 항상 버퍼 안의 연속된 단일 구간이다. 요청 크기가 그 시점에 연속으로 확보 가능한 공간을 넘으면, **Writer는 예약 자체가 실패**(invalid 핸들 반환)하고, **Reader는 확보 가능한 크기로 clamp**한다.
+- Writer/Reader는 소멸 시 자동으로 `Commit()`을 호출한다 (RAII). 커밋 없이 취소하려면 `GiveUp()`을 명시적으로 호출한다.
+- 복사 금지, 이동만 허용 (소유권 이전). 단 서로 다른 `RingBuffer` 인스턴스 간의 이동은 금지된다.
 
 ---
 
@@ -79,118 +78,90 @@ classDiagram
 
 ### 3.1 기본 구조
 
-`RingBuffer(bufferSize)` 호출 시 `bufferSize + 1` 크기의 배열을 할당한다.
-1칸은 **빈/꽉 찬 상태를 구분**하기 위한 sentinel 슬롯이다.
+`kCapacity`는 `static constexpr UINT32 kCapacity = 1024 * 16`으로 **컴파일 타임에 고정**되며, 생성자에 크기를 넘겨 런타임에 바꿀 수 없다. 별도의 sentinel 슬롯도 없다 — 빈/꽉 찬 상태는 `m_isFull` 불리언 플래그로 구분한다.
 
 ```
- kCapacity = bufferSize + 1
+ kCapacity = 1024 * 16 (고정)
  ┌───────────────────────────────────────────────────────┐
- │ 0 │ 1 │ 2 │ 3 │ ··· │ bufferSize-1 │ bufferSize(▓) │
+ │ 0 │ 1 │ 2 │ 3 │ ··· │ kCapacity-1 │
  └───────────────────────────────────────────────────────┘
-   ▲                                        ▲
-   실제 사용 가능 = bufferSize칸            sentinel 슬롯
 ```
 
-- **Empty 조건**: `m_writeCursor == m_readCursor`
-- **Full 조건**: `(m_writeCursor + 1) % kCapacity == m_readCursor`
+- **Empty 조건**: `!m_isFull && (m_writeCursor == m_readCursor)`
+- **Full 조건**: `m_isFull == true` (마지막 `CommitWrite`로 인해 `m_writeCursor == m_readCursor`가 되면 설정됨)
 
 ---
 
-### 3.2 커서 상태별 버퍼 모습
+### 3.2 tail-skip 동작 (wrap 처리)
 
-#### Case A: Write가 Read보다 뒤에 있을 때 (`R ≤ W`)
+`m_tailCursor`는 "이 지점까지가 유효한 데이터 끝"이라는 경계를 기록하는 커서다. 평상시엔 `kCapacity`와 같아서 아무 의미가 없다가, 꼬리 공간이 부족해 앞으로 건너뛸 때만 옛 `m_writeCursor` 값을 저장한다.
 
 ```
+ (1) 순차적으로 채워진 초기 상태 (capacity=10 가정)
  인덱스:  0   1   2   3   4   5   6   7   8   9
         ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
         │   │   │ D │ D │ D │ D │   │   │   │   │
         └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
               ▲ R                 ▲ W
-              │                   │
-              읽기 시작점         쓰기 시작점
+        m_tailCursor = kCapacity(=10)  ※ 아직 wrap 안 함
 
-     읽기 가능 (D) : [R .. W-1]  → 연속 1개 청크
-     쓰기 가능     : [W .. end] + [0 .. R-1]  → 최대 2개 청크
-```
+ (2) CreateWriter(5) 호출: 꼬리 [W..9] = 4칸 → 부족.
+     앞쪽 [0..R-1] = 2칸도 부족 → 예약 실패 (invalid Writer 반환, 부분 예약 없음)
 
-#### Case B: Write가 Read보다 앞에 있을 때 (Wrap-around, `W < R`)
+ (3) 꼬리는 부족하지만 앞쪽엔 공간이 있는 경우 (writeSize <= R):
+     m_tailCursor = m_writeCursor (옛 W 값 기억)
+     m_writeCursor = 0
+     → 이후 CreateWriter는 인덱스 0부터 다시 시작
 
-```
  인덱스:  0   1   2   3   4   5   6   7   8   9
         ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-        │ D │ D │   │   │   │   │ D │ D │ D │ D │
+        │ D │   │ D │ D │ D │ D │   │   │   │▓▓▓│  ▓ = tailCursor 뒤 미사용 구간
         └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
-                  ▲ W                 ▲ R
-                  │                   │
-                  쓰기 시작점         읽기 시작점
+          ▲ W(new)   ▲ R                     ▲ m_tailCursor(=옛 W)
 
-     읽기 가능 (D) : [R .. end] + [0 .. W-1]  → 최대 2개 청크
-     쓰기 가능     : [W .. R-1]  → 연속 1개 청크
+ (4) Reader가 m_tailCursor까지 다 읽으면 (m_readCursor == m_tailCursor):
+     m_readCursor = 0, m_tailCursor = kCapacity 로 리셋 → 다시 (1) 상태처럼 순환
 ```
 
 ---
 
-## 4. Scatter-Gather (2-Chunk) 방식
+## 4. 예약 실패/clamp 규칙
 
-데이터가 버퍼 끝에서 처음으로 되돌아가는(Wrap) 경우, **연속된 메모리 복사 없이** 2개의 포인터로 분산 접근한다.
+기존 "Scatter-Gather" 방식과 달리, 한 번의 예약은 절대 두 조각으로 나뉘지 않는다. 대신 Writer와 Reader의 동작이 서로 다르다.
 
-### 4.1 쓰기 예시: Wrap이 발생하는 경우
-
-```
- ────────── ReserveWrite(7) 호출 ──────────
-
- 버퍼 상태 (capacity=10):
- 인덱스:  0   1   2   3   4   5   6   7   8   9
-        ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-        │   │   │   │   │   │   │   │ X │ X │ X │
-        └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
-          ▲ R                           ▲ W
-
- 쓰기 가능 청크:
-   1st chunk: [W=7 .. 9]  → 3칸
-   2nd chunk: [0 .. R-1]  → 0칸... 부족!
-
- → 만약 R=5 였다면:
- 인덱스:  0   1   2   3   4   5   6   7   8   9
-        ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-        │   │   │   │   │   │ X │ X │   │   │   │
-        └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
-                              ▲ R       ▲ W
-
-   1st chunk: [W=7 .. 9]  → firstPtr = &buf[7], firstSize = 3
-   2nd chunk: [0 .. 4]    → secondPtr = &buf[0], secondSize = 4
-
- Writer가 받는 것:
- ┌─────────────────┐     ┌──────────────────────┐
- │ firstPtr  ──────┼──→  │ buf[7] buf[8] buf[9] │  (3 bytes)
- │ firstSize = 3   │     └──────────────────────┘
- │ secondPtr ──────┼──→  ┌────────────────────────────┐
- │ secondSize = 4  │     │ buf[0] buf[1] buf[2] buf[3]│  (4 bytes)
- │ totalSize = 7   │     └────────────────────────────┘
- └─────────────────┘
-```
-
-### 4.2 읽기도 동일 원리
+### 4.1 CreateWriter(writeSize) — 전부 아니면 실패
 
 ```
- ────────── ReserveRead(5) 호출 ──────────
+ 요청한 크기를 연속으로 확보할 수 없으면 예약 자체가 실패한다 (invalid Writer 반환).
+ 호출자는 나중에 다시 시도해야 한다 (backpressure).
 
- 인덱스:  0   1   2   3   4   5   6   7   8   9
-        ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-        │ D │ D │   │   │   │   │   │   │ D │ D │
-        └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
-                  ▲ W                       ▲ R
-
- Reader가 받는 것:
- ┌─────────────────┐     ┌──────────────┐
- │ firstPtr  ──────┼──→  │ buf[8] buf[9]│  (2 bytes, const)
- │ firstSize = 2   │     └──────────────┘
- │ secondPtr ──────┼──→  ┌──────────────┐
- │ secondSize = 2  │     │ buf[0] buf[1]│  (2 bytes, const)
- │ totalSize = 4   │     └──────────────┘
- └─────────────────┘
- ※ 요청 5 > 가용 4이므로 min(5,4)=4로 클램핑됨
+ 판단 순서:
+  1) m_isFull 이면 즉시 실패
+  2) R <= W (아직 wrap 안 한 상태)
+     a) 꼬리 공간 (kCapacity - W) >= writeSize → 꼬리에서 그대로 사용
+     b) 아니면 앞쪽 공간 (R) >= writeSize → tailCursor=W, W=0 으로 점프해서 사용
+     c) 둘 다 부족 → 실패
+  3) W < R (이미 한 번 wrap한 상태)
+     a) 남은 공간 (R - W) >= writeSize → 그대로 사용
+     b) 부족 → 실패
 ```
+
+### 4.2 CreateReader(readSize) — 가능한 만큼 clamp
+
+```
+ 요청한 크기보다 연속으로 읽을 수 있는 데이터가 적으면, 그 크기만큼 clamp해서 돌려준다.
+
+ 판단 순서:
+  1) m_readCursor == m_tailCursor 이면 wrap 캐치업 (R=0, tailCursor=kCapacity)
+  2) 버퍼가 비어있으면 실패 (invalid Reader 반환)
+  3) 연속 읽기 가능 크기 = (R < W) ? (W - R) : (tailCursor - R)
+  4) readSize = min(요청 크기, 연속 읽기 가능 크기)
+  5) readSize == 0 이면 실패
+```
+
+### 4.3 CreateAllWriter / CreateAllReader
+
+정확한 크기를 모를 때(예: 소켓 recv/send처럼 "지금 연속으로 쓰거나 읽을 수 있는 만큼 전부"가 필요한 경우) 사용한다. 요청 크기 파라미터가 없고, 그 시점에 연속으로 확보 가능한 만큼을 그대로 예약한다. 확보 가능한 공간이 0이면 실패(invalid 반환)한다.
 
 ---
 
@@ -204,16 +175,17 @@ sequenceDiagram
     participant RB as RingBuffer
     participant W as RingBufferWriter
 
-    App ->> RB: ReserveWrite(size)
+    App ->> RB: CreateWriter(size)
     Note over RB: m_isActiveWriter = true
     RB -->> App: RingBufferWriter (move)
 
-    App ->> W: WriteData(data, size)<br/>또는 As<T>()로 직접 접근
-    Note over W: firstPtr/secondPtr에 데이터 기록
+    App ->> W: GetPtr<T>() / As<T>()로 직접 메모리 접근 후 기록
+    Note over W: m_ptr가 가리키는 연속 메모리에 직접 씀
 
     App ->> App: writer 스코프 종료 (소멸)
-    W ->> RB: ~RingBufferWriter() → CommitWrite()
-    Note over RB: m_writeCursor 이동<br/>m_isActiveWriter = false
+    W ->> W: ~RingBufferWriter() → Commit()
+    W ->> RB: CommitWrite(*this)
+    Note over RB: m_writeCursor 이동, 필요 시 m_isFull 갱신<br/>m_isActiveWriter = false
 ```
 
 ```mermaid
@@ -222,130 +194,84 @@ sequenceDiagram
     participant RB as RingBuffer
     participant R as RingBufferReader
 
-    App ->> RB: ReserveRead(size)
+    App ->> RB: CreateReader(size)
     Note over RB: m_isActiveReader = true
     RB -->> App: RingBufferReader (move)
 
-    App ->> R: As<T>()로 읽기<br/>또는 firstPtr/secondPtr 접근
-    Note over R: const 포인터로 Zero-Copy 읽기
+    App ->> R: GetPtr<T>() / As<T>()로 읽기 (const, Zero-Copy)
 
     App ->> App: reader 스코프 종료 (소멸)
-    R ->> RB: ~RingBufferReader() → CommitRead()
-    Note over RB: m_readCursor 이동<br/>m_isActiveReader = false
+    R ->> RB: ~RingBufferReader() → CommitRead(*this)
+    Note over RB: m_readCursor 이동 (필요 시 tailCursor 캐치업)<br/>m_isActiveReader = false
 ```
 
 ---
 
-## 6. 핵심 알고리즘 - Chunk 크기 계산
+## 6. 사용법
 
-### GetWritableChunkSizes()
-
-```mermaid
-flowchart TD
-    Start["GetWritableChunkSizes()"] --> CmpRW{"R ≤ W ?"}
-
-    CmpRW -->|Yes| CmpR0{"R == 0 ?"}
-    CmpR0 -->|Yes| RetA["1st: capacity - W - 1<br/>2nd: 0<br/><i>끝에 sentinel 1칸을 빼야 함</i>"]
-    CmpR0 -->|No| RetB["1st: capacity - W<br/>2nd: R - 1"]
-
-    CmpRW -->|No, W < R| RetC["1st: R - W - 1<br/>2nd: 0<br/><i>R 바로 앞까지만 쓸 수 있음</i>"]
-
-    style RetA fill:#2d5016,color:#fff
-    style RetB fill:#2d5016,color:#fff
-    style RetC fill:#2d5016,color:#fff
-```
-
-### GetReadableChunkSizes()
-
-```mermaid
-flowchart TD
-    Start["GetReadableChunkSizes()"] --> CmpEq{"R == W ?"}
-
-    CmpEq -->|Yes| RetEmpty["1st: 0, 2nd: 0<br/><i>버퍼 비어있음</i>"]
-
-    CmpEq -->|No| CmpRW{"R < W ?"}
-    CmpRW -->|Yes| RetA["1st: W - R<br/>2nd: 0<br/><i>연속 구간</i>"]
-    CmpRW -->|No, W < R| RetB["1st: capacity - R<br/>2nd: W<br/><i>끝 + 처음</i>"]
-
-    style RetEmpty fill:#4a1942,color:#fff
-    style RetA fill:#2d5016,color:#fff
-    style RetB fill:#2d5016,color:#fff
-```
-
----
-
-## 7. 사용법
-
-### 7.1 Zero-Copy 쓰기 (WriteData)
+### 6.1 Zero-Copy 쓰기
 
 ```cpp
-RingBuffer rb(1024);
+RingBuffer rb;  // 크기는 컴파일 타임 kCapacity로 고정, 생성자에 크기 인자 없음
 
-// 스코프 기반 자동 커밋
 {
-    RingBufferWriter writer = rb.ReserveWrite(sizeof(PacketHeader) + payloadSize);
+    RingBufferWriter writer = rb.CreateWriter(PacketHeader::kHeaderSize + payloadSize);
     if (writer.IsValid())
     {
-        writer.WriteData(&header, sizeof(PacketHeader));
-        // ※ WriteData는 firstPtr → secondPtr 순서로 scatter write 수행
+        PacketHeader& header = writer.As<PacketHeader>();
+        header.m_size = static_cast<UINT16>(PacketHeader::kHeaderSize + payloadSize);
+        header.m_id = packetId;
+
+        std::memcpy(writer.GetPtr(PacketHeader::kHeaderSize), payload, payloadSize);
     }
-}   // ← 여기서 ~RingBufferWriter() → CommitWrite() 자동 호출
+    // writer가 invalid면 지금은 연속 공간이 부족한 것 — 나중에 재시도
+}   // ← 여기서 ~RingBufferWriter() → Commit() → CommitWrite() 자동 호출
 ```
 
-### 7.2 Zero-Copy 쓰기 (As\<T\> - 구조체 직접 접근)
+### 6.2 CreateAllWriter / CreateAllReader (소켓 I/O 등, 크기를 미리 모를 때)
+
+```cpp
+RingBufferWriter writer = rb.CreateAllWriter();
+if (writer.IsValid())
+{
+    std::size_t received = socket.receive(boost::asio::buffer(writer.GetPtr(), writer.GetSize()));
+    writer.Commit(static_cast<UINT32>(received));  // 실제로 받은 만큼만 커밋
+}
+```
+
+### 6.3 Zero-Copy 읽기
 
 ```cpp
 {
-    RingBufferWriter writer = rb.ReserveWrite(sizeof(MyStruct));
-    if (writer.IsValid() && !writer.IsWrapped())
+    RingBufferReader reader = rb.CreateReader(PacketHeader::kHeaderSize);
+    if (reader.IsValid() && reader.GetSize() == PacketHeader::kHeaderSize)
     {
-        MyStruct* ptr = writer.As<MyStruct>();
-        ptr->field1 = 42;
-        ptr->field2 = 3.14f;
-        // Wrap 되지 않은 경우에만 사용 가능 (연속 메모리 보장)
+        const PacketHeader& header = reader.As<PacketHeader>();
+        ProcessPacket(header);
     }
-}   // 자동 커밋
+    else if (reader.IsValid())
+    {
+        // 요청한 크기보다 적게 확보된 경우(clamp) — 커밋하지 않고 되돌린다
+        reader.GiveUp();
+    }
+}   // 커밋 시 자동으로 readCursor 이동
 ```
 
-### 7.3 Zero-Copy 읽기
+### 6.4 예약 취소 (GiveUp)
 
 ```cpp
+RingBufferReader reader = rb.CreateReader(PacketHeader::kHeaderSize);
+if (reader.IsValid() && reader.GetSize() < PacketHeader::kHeaderSize)
 {
-    RingBufferReader reader = rb.ReserveRead(sizeof(PacketHeader));
-    if (reader.IsValid())
-    {
-        if (!reader.IsWrapped())
-        {
-            // 연속 메모리: 캐스팅으로 바로 접근
-            const PacketHeader* hdr = reader.As<PacketHeader>();
-            ProcessPacket(hdr);
-        }
-        else
-        {
-            // Wrap된 경우: 2개 청크를 개별 처리
-            const void* p1 = reader.GetFirstPtr();   // size = reader.GetFirstSize()
-            const void* p2 = reader.GetSecondPtr();   // size = reader.GetSecondSize()
-            // 필요시 별도 버퍼에 합쳐서 처리
-        }
-    }
-}   // 자동 커밋 → readCursor 이동
+    reader.GiveUp();  // 커서를 옮기지 않고 예약만 취소 (다음 recv 이후 재시도)
+}
 ```
 
-### 7.4 단순 복사 방식 (Read / Peek)
-
-```cpp
-// Peek: 데이터를 읽되 커서를 이동하지 않음
-char peekBuf[128];
-UINT32 peeked = rb.Peek(peekBuf, 128);
-
-// Read: 데이터를 읽고 커서도 이동
-char readBuf[128];
-UINT32 read = rb.Read(readBuf, 128);
-```
+> 참고: 이 클래스는 `memcpy` 기반의 `Read()`/`Peek()` 헬퍼를 제공하지 않는다. 모든 접근은 `GetPtr<T>()`/`As<T>()`를 통한 Zero-Copy 포인터 접근뿐이다.
 
 ---
 
-## 8. 안전장치 정리
+## 7. 안전장치 정리
 
 ```
  ┌──────────────────────────────────────────────────────────────┐
@@ -353,37 +279,47 @@ UINT32 read = rb.Read(readBuf, 128);
  ├──────────────────────────────────────────────────────────────┤
  │                                                              │
  │  ■ 동시 활성 방지                                             │
- │    ├─ Writer 이미 활성 상태에서 ReserveWrite → ASSERT 실패     │
- │    └─ Reader 이미 활성 상태에서 ReserveRead → ASSERT 실패      │
+ │    ├─ Writer 이미 활성 상태에서 CreateWriter → ASSERT 실패     │
+ │    └─ Reader 이미 활성 상태에서 CreateReader → ASSERT 실패     │
  │                                                              │
  │  ■ 소멸자 검증                                                │
  │    ├─ ~RingBuffer() 시 Writer/Reader 활성 → ASSERT 실패       │
  │    └─ ~RingBuffer() 시 버퍼 비어있지 않음 → ASSERT 실패        │
  │                                                              │
- │  ■ 데이터 무결성                                              │
- │    ├─ firstSize + secondSize != totalSize → ASSERT 실패       │
- │    └─ Wrap된 Reader에 As<T>() 호출 → ASSERT 실패              │
+ │  ■ 커밋 무결성                                                │
+ │    ├─ CommitWrite: writeSize > 예약 크기 → ASSERT 실패         │
+ │    ├─ CommitWrite: m_writeCursor + writeSize > kCapacity      │
+ │    │   → ASSERT 실패 ("Write cursor overflow")                │
+ │    ├─ CommitRead: readSize > 예약 크기 → ASSERT 실패           │
+ │    └─ CommitRead: m_readCursor > m_tailCursor                 │
+ │        → ASSERT 실패 ("Read cursor overflow")                 │
+ │                                                              │
+ │  ■ 핸들 무결성                                                │
+ │    ├─ 서로 다른 RingBuffer 간 Writer/Reader move 대입          │
+ │    │   → ASSERT 실패 ("Cannot move ... from different buffer")│
+ │    ├─ GetPtr<T>(offset)에서 offset > 예약 크기                │
+ │    │   → ASSERT 실패 ("Offset out of bounds")                 │
+ │    └─ invalid 상태에서 Commit/GiveUp/As 호출 → ASSERT 실패     │
  │                                                              │
  │  ■ 크기 검증                                                  │
- │    ├─ bufferSize == 0 으로 생성 → ASSERT 실패                  │
- │    ├─ ReserveWrite(0) → ASSERT 실패                           │
- │    └─ ReserveRead(0) → ASSERT 실패                            │
+ │    ├─ CreateWriter(0) → ASSERT 실패 ("Write size is 0")        │
+ │    └─ CreateReader(0) → ASSERT 실패 ("Read size is 0")         │
  │                                                              │
  └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 9. 파일 구성
+## 8. 파일 구성
 
 ```
 Include/DataStruct/RingBuffer/
-├── RingBuffer.h           ← 메인 클래스 (Writer/Reader 생성, 커서 관리)
-├── RingBufferWriter.h     ← 쓰기 RAII 핸들 (Scatter-Gather 쓰기)
-└── RingBufferReader.h     ← 읽기 RAII 핸들 (Zero-Copy 읽기)
+├── RingBuffer.h           ← 메인 클래스 (Writer/Reader 생성, 커서/tailCursor 관리)
+├── RingBufferWriter.h     ← 쓰기 RAII 핸들 (단일 연속 구간, GetPtr/As로 접근)
+└── RingBufferReader.h     ← 읽기 RAII 핸들 (단일 연속 구간, GetPtr/As로 접근, const)
 
 Source/DataStruct/RingBuffer/
-├── RingBuffer.cpp         ← Reserve/Commit, Chunk 계산, Read/Peek
-├── RingBufferWriter.cpp   ← 이동 시맨틱스, WriteData, RAII 소멸자
-└── RingBufferReader.cpp   ← 이동 시맨틱스, RAII 소멸자
+├── RingBuffer.cpp         ← Create/Commit/GiveUp, 커서 이동, tail-skip 처리
+├── RingBufferWriter.cpp   ← 이동 시맨틱스, RAII 소멸자(자동 Commit)
+└── RingBufferReader.cpp   ← 이동 시맨틱스, RAII 소멸자(자동 Commit)
 ```
