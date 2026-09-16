@@ -7,7 +7,7 @@ struct PacketHeader
     UINT16 m_size = 0;
     UINT16 m_id = 0;
 
-    static constexpr UINT32 kHeaderSize = sizeof(PacketHeader);
+    static constexpr UINT32 kHeaderSize = sizeof(m_size) + sizeof(m_id);
 };
 #pragma pack(pop)
 
@@ -34,7 +34,7 @@ public:
     template <typename PacketType>
     PacketType* GetBody() const
     {
-        ASSERT(IsValid());
+        ASSERT(IsValid(), "Packet is invalid");
         return static_cast<PacketType*>(m_body);
     }
 

@@ -8,13 +8,7 @@ class PacketSerializer
 public:
     static bool Write(RingBuffer& buffer, UINT16 packetId, const PacketBody& packetBody)
     {
-        if (nullptr == packetBody)
-        {
-            // TODO : Error Log
-            return false;
-        }
-
-        const UINT32 bodySize = static_cast<UINT32>(packetBody->ByteSizeLong());
+        const UINT32 bodySize = static_cast<UINT32>(packetBody.ByteSizeLong());
         const UINT32 totalSize = PacketHeader::kHeaderSize + bodySize;
         if (UINT16_MAX < totalSize)
         {
@@ -32,7 +26,7 @@ public:
         PacketHeader& header = writer.As<PacketHeader>();
         header.m_size = static_cast<UINT16>(totalSize);
         header.m_id = packetId;
-        bool result = packetBody->SerializeToArray(writer.GetPtr(PacketHeader::kHeaderSize), bodySize);
+        bool result = packetBody.SerializeToArray(writer.GetPtr(PacketHeader::kHeaderSize), bodySize);
         if (false == result)
         {
             // TODO : Error Log
@@ -90,7 +84,7 @@ public:
     template <typename TMessage>
     static TMessage* Read(RingBuffer& buffer, const PacketHeader& header, google::protobuf::Arena& arena)
     {
-        TMessage* message = google::protobuf::Arena::CreateMessage<TMessage>(&arena);
+        TMessage* message = google::protobuf::Arena::Create<TMessage>(&arena);
         if (!Read(buffer, header, *message))
             return nullptr;
         return message;

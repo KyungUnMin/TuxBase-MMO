@@ -17,7 +17,8 @@ template <typename T, UINT32 Size>
 inline void LockQueue<T, Size>::Push(const T& data)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    CRASH(m_count < Size, "Queue overflow.");
+    if (m_count < Size)
+        CRASH("Queue overflow.");
     m_queue[m_tailIndex] = data;
     m_tailIndex = (m_tailIndex + 1) % Size;
     ++m_count;
@@ -27,7 +28,8 @@ template <typename T, UINT32 Size>
 inline void LockQueue<T, Size>::Push(T&& data)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    CRASH(m_count < Size, "Queue overflow.");
+    if (m_count < Size)
+        CRASH("Queue overflow.");
     m_queue[m_tailIndex] = std::move(data);
     m_tailIndex = (m_tailIndex + 1) % Size;
     ++m_count;
@@ -38,7 +40,8 @@ template <typename... Args>
 inline void LockQueue<T, Size>::Emplace(Args&&... args)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    CRASH(m_count < Size, "Queue overflow.");
+    if (m_count < Size)
+        CRASH("Queue overflow.");
     m_queue[m_tailIndex] = T(std::forward<Args>(args)...);
     m_tailIndex = (m_tailIndex + 1) % Size;
     ++m_count;

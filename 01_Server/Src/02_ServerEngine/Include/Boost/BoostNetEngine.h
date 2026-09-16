@@ -8,7 +8,6 @@ class BoostNetEngine : public INetEngine
 {
     using IoContext = boost::asio::io_context;
     using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
-    class ISession;
 
 public:
     BoostNetEngine() = delete;
@@ -25,6 +24,7 @@ public:
     ISession* FindSession(UINT64 serialId) override
     {
         // TODO : 나중에 만들자~
+        return nullptr;
     }
 
 protected:
