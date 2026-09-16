@@ -1,5 +1,5 @@
 #pragma once
-#include "DataStruct/RingBuffer/RingBuffer.h"
+#include "DataStruct/RingBuffer.h"
 #include "EngineCommon/Packet.h"
 #include <google/protobuf/arena.h>
 

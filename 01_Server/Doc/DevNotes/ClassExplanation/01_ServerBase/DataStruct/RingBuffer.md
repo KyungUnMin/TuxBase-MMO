@@ -313,12 +313,12 @@ if (reader.IsValid() && reader.GetSize() < PacketHeader::kHeaderSize)
 ## 8. 파일 구성
 
 ```
-Include/DataStruct/RingBuffer/
+Include/DataStruct/
 ├── RingBuffer.h           ← 메인 클래스 (Writer/Reader 생성, 커서/tailCursor 관리)
 ├── RingBufferWriter.h     ← 쓰기 RAII 핸들 (단일 연속 구간, GetPtr/As로 접근)
 └── RingBufferReader.h     ← 읽기 RAII 핸들 (단일 연속 구간, GetPtr/As로 접근, const)
 
-Source/DataStruct/RingBuffer/
+Source/DataStruct/
 ├── RingBuffer.cpp         ← Create/Commit/GiveUp, 커서 이동, tail-skip 처리
 ├── RingBufferWriter.cpp   ← 이동 시맨틱스, RAII 소멸자(자동 Commit)
 └── RingBufferReader.cpp   ← 이동 시맨틱스, RAII 소멸자(자동 Commit)

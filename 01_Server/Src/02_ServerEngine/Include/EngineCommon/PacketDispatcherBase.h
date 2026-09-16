@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineCommon/Packet.h"
-#include "DataStruct/LockBase/LockQueue.h"
-#include "DataStruct/RingBuffer/RingBufferReader.h"
+#include "DataStruct/LockQueue.h"
+#include "DataStruct/RingBufferReader.h"
 
 class PacketDispatcherBase
 {

@@ -1,4 +1,4 @@
-#include "DataStruct/RingBuffer/RingBuffer.h"
+#include "DataStruct/RingBuffer.h"
 #include "Verify/Assert.h"
 
 RingBufferReader::RingBufferReader()

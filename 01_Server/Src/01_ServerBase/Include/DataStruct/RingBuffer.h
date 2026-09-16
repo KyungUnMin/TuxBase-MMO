@@ -1,7 +1,7 @@
 #pragma once
 
-#include "DataStruct/RingBuffer/RingBufferWriter.h"
-#include "DataStruct/RingBuffer/RingBufferReader.h"
+#include "DataStruct/RingBufferWriter.h"
+#include "DataStruct/RingBufferReader.h"
 
 class RingBuffer
 {

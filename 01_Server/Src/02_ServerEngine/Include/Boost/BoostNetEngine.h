@@ -1,6 +1,6 @@
 #pragma once
 #include "Boost/BoostSession.h"
-#include "DataStruct/LockBase/LockStack.h"
+#include "DataStruct/LockStack.h"
 #include "Threading/Thread.h"
 #include "EngineInterface/INetEngine.h"
 

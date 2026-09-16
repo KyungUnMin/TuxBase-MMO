@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "DataStruct/RingBuffer/RingBuffer.h"
+#include "DataStruct/RingBuffer.h"
 
 #pragma pack(push, 1)
 struct DummyPacketHeader
