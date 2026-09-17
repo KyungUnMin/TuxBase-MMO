@@ -1,7 +1,7 @@
 #pragma once
 #include "DataStruct/RingBuffer.h"
 #include "EngineCommon/Packet.h"
-#include <google/protobuf/arena.h>
+#include <memory>
 
 class PacketSerializer
 {
@@ -82,9 +82,9 @@ public:
     }
 
     template <typename TMessage>
-    static TMessage* Read(RingBuffer& buffer, const PacketHeader& header, google::protobuf::Arena& arena)
+    static std::unique_ptr<TMessage> Read(RingBuffer& buffer, const PacketHeader& header)
     {
-        TMessage* message = google::protobuf::Arena::Create<TMessage>(&arena);
+        std::unique_ptr<TMessage> message = std::make_unique<TMessage>();
         if (!Read(buffer, header, *message))
             return nullptr;
         return message;

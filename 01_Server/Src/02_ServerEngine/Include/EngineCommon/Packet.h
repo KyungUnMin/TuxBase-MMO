@@ -1,12 +1,11 @@
 #pragma once
-#include <limits>
+#include <memory>
 
 #pragma pack(push, 1)
 struct PacketHeader
 {
     UINT16 m_size = 0;
     UINT16 m_id = 0;
-
     static constexpr UINT32 kHeaderSize = sizeof(m_size) + sizeof(m_id);
 };
 #pragma pack(pop)
@@ -15,11 +14,9 @@ using PacketBody = google::protobuf::Message;
 
 class Packet
 {
-    class ISession;
-    class INetEngine;
-
 public:
     Packet();
+    Packet(UINT64 sessionId, const PacketHeader& header, std::unique_ptr<PacketBody> body);
     ~Packet();
 
     Packet(const Packet&) = delete;
@@ -35,7 +32,7 @@ public:
     PacketType* GetBody() const
     {
         ASSERT(IsValid(), "Packet is invalid");
-        return static_cast<PacketType*>(m_body);
+        return static_cast<PacketType*>(m_body.get());
     }
 
 private:
@@ -51,5 +48,5 @@ private:
 private:
     UINT64 m_sessionId;
     PacketHeader m_header;
-    PacketBody* m_body;
+    std::unique_ptr<PacketBody> m_body;
 };

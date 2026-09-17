@@ -43,9 +43,9 @@ public:
     }
 
     template <typename TMessage>
-    TMessage* ReadPacket(const PacketHeader& header, google::protobuf::Arena& arena)
+    std::unique_ptr<TMessage> ReadPacket(const PacketHeader& header)
     {
-        return PacketSerializer::Read<TMessage>(m_recvBuffer, header, arena);
+        return PacketSerializer::Read<TMessage>(m_recvBuffer, header);
     }
 
 private:

@@ -6,6 +6,13 @@ Packet::Packet()
 {
 }
 
+Packet::Packet(UINT64 sessionId, const PacketHeader& header, std::unique_ptr<PacketBody> body)
+    : m_sessionId(sessionId)
+    , m_header(header)
+    , m_body(std::move(body))
+{
+}
+
 Packet::~Packet()
 {
 }
