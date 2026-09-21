@@ -1,2 +1,4 @@
 01_Server/Src/build/
 
+# 컨테이너별 Claude Code 설정/인증 정보
+01_Server/.devcontainer/claude-data/

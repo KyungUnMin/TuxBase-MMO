@@ -1,8 +1,6 @@
 {
     "name": "TuxBase MMO Dev Environment - Server",
-    "dockerComposeFile": [
-        "../compose.yml"
-    ],
+    "dockerComposeFile": ["../compose.yml"],
     "service": "mainserver",
     "workspaceFolder": "/root/src",
     "customizations": {
@@ -15,7 +13,8 @@
                 "msfukui.eof-mark",
                 "eamodio.gitlens",
                 "matepek.vscode-catch2-test-adapter",
-                "oderwat.indent-rainbow"
+                "oderwat.indent-rainbow",
+                "anthropic.claude-code"
             ],
             "settings": {
                 "editor.tabSize": 4,

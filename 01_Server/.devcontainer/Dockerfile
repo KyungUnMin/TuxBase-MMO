@@ -32,6 +32,10 @@ RUN dnf update -y \
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
     && chsh -s $(which zsh)
 
+# Claude Code CLI 설치 (인증/설정은 compose.yml의 bind mount로 유지)
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV PATH="/root/.local/bin:${PATH}"
+
 # Git CRLF(윈도우 줄바꿈)랑 LF(리눅스 줄바꿈) 자동 변환
 RUN git config --global core.autocrlf true
 

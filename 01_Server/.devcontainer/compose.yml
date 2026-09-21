@@ -1,20 +1,26 @@
 services:
   mainserver:
     container_name: tuxbase-mainserver
-    build: .
+    image: ${IMAGE_NAME:?IMAGE_NAME is not set (see .env)}
     ports:
       - "13000:13000"
+    environment:
+      - CLAUDE_CONFIG_DIR=/root/.claude
     volumes:
       - ../Src:/root/src
       - ../../03_Share:/root/share
+      - ./claude-data/mainserver:/root/.claude
     command: sleep infinity
 
   dummyclient:
     container_name: tuxbase-dummyclient
-    build: .
+    image: ${IMAGE_NAME:?IMAGE_NAME is not set (see .env)}
+    environment:
+      - CLAUDE_CONFIG_DIR=/root/.claude
     volumes:
       - ../Src:/root/src
       - ../../03_Share:/root/share
+      - ./claude-data/dummyclient:/root/.claude
     depends_on:
       - mainserver
     command: sleep infinity

@@ -13,7 +13,8 @@
                 "msfukui.eof-mark",
                 "eamodio.gitlens",
                 "matepek.vscode-catch2-test-adapter",
-                "oderwat.indent-rainbow"
+                "oderwat.indent-rainbow",
+                "anthropic.claude-code"
             ],
             "settings": {
                 "editor.tabSize": 4,

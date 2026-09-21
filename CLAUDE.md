@@ -30,20 +30,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **WSL** 안에서 Docker를 띄운 후, **Docker 컨테이너(Fedora Linux)** 내부에서 빌드/실행합니다.
 
-### Docker 컨테이너 시작
+### Docker 이미지 빌드 및 컨테이너 시작
+
+`01_Server/.devcontainer/scripts/`의 스크립트로 관리합니다 (어느 위치에서 실행해도 동작).
+이미지 이름(`tuxbase-mmo`)은 `01_Server/.devcontainer/.env`의 `IMAGE_NAME`에서 한 번만 정의하며, 스크립트와 `compose.yml`이 함께 참조합니다.
 
 ```bash
-# 01_Server/.devcontainer/ 에서 실행
-docker compose -p 01_server_devcontainer -f compose.yml up -d --build
+# 1. 이미지 빌드 (최초 1회, Dockerfile 변경 시 재실행)
+01_Server/.devcontainer/scripts/rebuild_docker_image.sh
+
+# 2. 컨테이너 시작 (이미지가 없으면 실패)
+01_Server/.devcontainer/scripts/start_docker_container.sh
+
+# 3. 컨테이너 종료
+01_Server/.devcontainer/scripts/stop_docker_container.sh
 ```
 
-컨테이너 종료:
+- `compose.yml`은 빌드하지 않고 미리 만든 이미지(`image: ${IMAGE_NAME}`)만 사용합니다. `mainserver`/`dummyclient`가 같은 이미지를 공유합니다.
+- Dockerfile을 수정했다면 `stop_docker_container.sh` → `rebuild_docker_image.sh` → `start_docker_container.sh` 순서로 실행합니다 (컨테이너가 떠 있는 채로 재빌드하면 기존 컨테이너는 옛 이미지를 계속 사용).
+- 수동으로 실행할 때는 `01_Server/.devcontainer/`에서 `docker compose -p 01_server_devcontainer -f compose.yml up -d` / `down`을 사용합니다.
 
-```bash
-docker compose -p 01_server_devcontainer -f compose.yml down
-```
-
-VSCode의 **Reopen in Container** 기능으로 컨테이너에 연결해서 작업합니다.
+VSCode의 **Reopen in Container** 기능으로 컨테이너에 연결해서 작업합니다. 같은 `compose.yml`을 쓰므로 이미지가 없으면 실패합니다 (먼저 `rebuild_docker_image.sh` 실행).
 
 ### 컨테이너 내 빌드
 
