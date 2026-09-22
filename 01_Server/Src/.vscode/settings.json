@@ -2,6 +2,7 @@
     "editor.formatOnSave": true,
     "cmake.configureOnOpen": true,
     "cmake.automaticReconfigure": true,
+    "cmake.defaultKit": "Clang (컨테이너 기본)",
     "workbench.tree.indent": 20,
     "workbench.tree.renderIndentGuides": "always",
     "editor.tabSize": 2,

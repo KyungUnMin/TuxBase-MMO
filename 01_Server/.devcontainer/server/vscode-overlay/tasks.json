@@ -71,10 +71,7 @@
                 "CMake: Build Client"
             ],
             "dependsOrder": "sequence",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "problemMatcher": []
         }
     ]

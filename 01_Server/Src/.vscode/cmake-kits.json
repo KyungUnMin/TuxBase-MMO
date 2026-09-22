@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Clang (컨테이너 기본)",
+        "compilers": {
+            "C": "/usr/bin/clang",
+            "CXX": "/usr/bin/clang++"
+        }
+    },
+    {
+        "name": "GCC (컨테이너)",
+        "compilers": {
+            "C": "/usr/bin/gcc",
+            "CXX": "/usr/bin/g++"
+        }
+    }
+]

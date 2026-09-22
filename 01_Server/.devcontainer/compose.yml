@@ -10,6 +10,8 @@ services:
       - ../Src:/root/src
       - ../../03_Share:/root/share
       - ./claude-data/mainserver:/root/.claude
+      - ./server/vscode-overlay/tasks.json:/root/src/.vscode/tasks.json
+      - ./server/vscode-overlay/launch.json:/root/src/.vscode/launch.json
     command: sleep infinity
 
   dummyclient:
@@ -21,6 +23,8 @@ services:
       - ../Src:/root/src
       - ../../03_Share:/root/share
       - ./claude-data/dummyclient:/root/.claude
+      - ./dummyclient/vscode-overlay/tasks.json:/root/src/.vscode/tasks.json
+      - ./dummyclient/vscode-overlay/launch.json:/root/src/.vscode/launch.json
     depends_on:
       - mainserver
     command: sleep infinity
