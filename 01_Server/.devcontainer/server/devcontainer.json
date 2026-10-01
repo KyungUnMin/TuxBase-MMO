@@ -2,7 +2,7 @@
     "name": "TuxBase MMO Dev Environment - Server",
     "dockerComposeFile": ["../compose.yml"],
     "service": "mainserver",
-    "workspaceFolder": "/root/src",
+    "workspaceFolder": "/root/tuxbase_mmo/01_Server/Src",
     "customizations": {
         "vscode": {
             "extensions": [

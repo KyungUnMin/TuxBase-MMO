@@ -46,6 +46,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 01_Server/.devcontainer/scripts/stop_docker_container.sh
 ```
 
+- `compose.yml`은 레포 루트를 `/root/tuxbase_mmo`에 통째로 마운트합니다 (호스트와 동일한 폴더 구조, 컨테이너 안에서 git·`CLAUDE.md`·`Doc` 사용 가능).
 - `compose.yml`은 빌드하지 않고 미리 만든 이미지(`image: ${IMAGE_NAME}`)만 사용합니다. `mainserver`/`dummyclient`가 같은 이미지를 공유합니다.
 - Dockerfile을 수정했다면 `stop_docker_container.sh` → `rebuild_docker_image.sh` → `start_docker_container.sh` 순서로 실행합니다 (컨테이너가 떠 있는 채로 재빌드하면 기존 컨테이너는 옛 이미지를 계속 사용).
 - 수동으로 실행할 때는 `01_Server/.devcontainer/`에서 `docker compose -p 01_server_devcontainer -f compose.yml up -d` / `down`을 사용합니다.
@@ -55,7 +56,7 @@ VSCode의 **Reopen in Container** 기능으로 컨테이너에 연결해서 작�
 ### 컨테이너 내 빌드
 
 ```bash
-# /root/src 에서 실행 (소스가 볼륨 마운트된 위치)
+# /root/tuxbase_mmo/01_Server/Src 에서 실행 (소스가 볼륨 마운트된 위치, 호스트와 동일한 폴더 구조)
 cmake -S . -B build/server/Linux -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/server/Linux
 ```

@@ -36,8 +36,8 @@ RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master
 RUN curl -fsSL https://claude.ai/install.sh | bash
 ENV PATH="/root/.local/bin:${PATH}"
 
-# Git CRLF(윈도우 줄바꿈)랑 LF(리눅스 줄바꿈) 자동 변환
-RUN git config --global core.autocrlf true
+# 컨테이너 내 사용자와 저장소 소유자가 달라도 Git 저장소를 신뢰하도록 설정
+RUN git config --global --add safe.directory /root/tuxbase_mmo
 
 # vcpkg 설치
 WORKDIR /opt 
@@ -49,4 +49,4 @@ ENV VCPKG_ROOT=/opt/vcpkg
 ENV PATH="${VCPKG_ROOT}:${PATH}"
 
 # 소스 마운트 디렉터리를 기본 작업 디렉터리로 설정
-WORKDIR /root/src
+WORKDIR /root/tuxbase_mmo

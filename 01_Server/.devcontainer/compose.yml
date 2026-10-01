@@ -7,11 +7,10 @@ services:
     environment:
       - CLAUDE_CONFIG_DIR=/root/.claude
     volumes:
-      - ../Src:/root/src
-      - ../../03_Share:/root/share
+      - ../..:/root/tuxbase_mmo
       - ./claude-data/mainserver:/root/.claude
-      - ./server/vscode-overlay/tasks.json:/root/src/.vscode/tasks.json
-      - ./server/vscode-overlay/launch.json:/root/src/.vscode/launch.json
+      - ./server/vscode-overlay/tasks.json:/root/tuxbase_mmo/01_Server/Src/.vscode/tasks.json
+      - ./server/vscode-overlay/launch.json:/root/tuxbase_mmo/01_Server/Src/.vscode/launch.json
     command: sleep infinity
 
   dummyclient:
@@ -20,11 +19,10 @@ services:
     environment:
       - CLAUDE_CONFIG_DIR=/root/.claude
     volumes:
-      - ../Src:/root/src
-      - ../../03_Share:/root/share
+      - ../..:/root/tuxbase_mmo
       - ./claude-data/dummyclient:/root/.claude
-      - ./dummyclient/vscode-overlay/tasks.json:/root/src/.vscode/tasks.json
-      - ./dummyclient/vscode-overlay/launch.json:/root/src/.vscode/launch.json
+      - ./dummyclient/vscode-overlay/tasks.json:/root/tuxbase_mmo/01_Server/Src/.vscode/tasks.json
+      - ./dummyclient/vscode-overlay/launch.json:/root/tuxbase_mmo/01_Server/Src/.vscode/launch.json
     depends_on:
       - mainserver
     command: sleep infinity
