@@ -28,7 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 빌드 및 개발 워크플로우
 
-**WSL** 안에서 Docker를 띄운 후, **Docker 컨테이너(Fedora Linux)** 내부에서 빌드/실행합니다.
+호스트에서 Docker를 띄운 후, **Docker 컨테이너(Fedora Linux)** 내부에서 빌드/실행합니다. 호스트는 PC에 따라 다릅니다 (Windows의 WSL 또는 네이티브 Linux). 호스트 종류를 가정하지 말고, 호스트에 따라 달라지는 작업(경로, 권한, Docker 실행 방식 등)은 먼저 확인합니다.
 
 ### Docker 이미지 빌드 및 컨테이너 시작
 
@@ -67,6 +67,23 @@ cmake --build --preset server-debug
 |---|---|---|
 | `server-debug` | `build/server/Linux/` | mainserver 컨테이너 기본 |
 | `client-debug` | `build/client/Linux/` | dummyclient 컨테이너 기본 |
+
+### 실행 환경 구분
+
+이 `CLAUDE.md`는 호스트와 두 컨테이너에서 똑같이 읽힙니다. 빌드/실행/테스트 전에 아래 명령으로 현재 환경을 확인합니다.
+
+```bash
+echo "${TUXBASE_ROLE:-none}"; ls /.dockerenv
+```
+
+| `TUXBASE_ROLE` | `/.dockerenv` | 환경 | 비고 |
+|---|---|---|---|
+| `mainserver` | 있음 | 서버 컨테이너 | 프리셋 `server-debug`, 주 대상 `GameServer`·`Tests` |
+| `dummyclient` | 있음 | 더미 클라이언트 컨테이너 | 프리셋 `client-debug`, 주 대상 `DummyClient` |
+| `none` | 없음 | 호스트 (WSL 또는 네이티브 Linux) | 빌드/실행/테스트는 컨테이너 안에서만 가능 |
+| `none` | 있음 | 변수가 빠진 컨테이너 | `compose.yml`의 `TUXBASE_ROLE` 설정과 컨테이너 재생성 여부를 확인 |
+
+`TUXBASE_ROLE`은 `01_Server/.devcontainer/compose.yml`의 `environment`에서 서비스별로 정의합니다. 컨테이너를 추가하면 이 변수와 위 표도 같이 추가합니다.
 
 ### 테스트 실행
 

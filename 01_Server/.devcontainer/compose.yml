@@ -6,6 +6,7 @@ services:
       - "13000:13000"
     environment:
       - CLAUDE_CONFIG_DIR=/root/.claude
+      - TUXBASE_ROLE=mainserver
     volumes:
       - ../..:/root/tuxbase_mmo
       - ./claude-data/mainserver:/root/.claude
@@ -18,6 +19,7 @@ services:
     image: ${IMAGE_NAME:?IMAGE_NAME is not set (see .env)}
     environment:
       - CLAUDE_CONFIG_DIR=/root/.claude
+      - TUXBASE_ROLE=dummyclient
     volumes:
       - ../..:/root/tuxbase_mmo
       - ./claude-data/dummyclient:/root/.claude
