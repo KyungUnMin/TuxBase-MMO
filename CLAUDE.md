@@ -57,11 +57,16 @@ VSCode의 **Reopen in Container** 기능으로 컨테이너에 연결해서 작�
 
 ```bash
 # /root/tuxbase_mmo/01_Server/Src 에서 실행 (소스가 볼륨 마운트된 위치, 호스트와 동일한 폴더 구조)
-cmake -S . -B build/server/Linux -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/server/Linux
+cmake --preset server-debug
+cmake --build --preset server-debug
 ```
 
-빌드 결과물은 `build/server/Linux/` 하위에 생성됩니다.
+컴파일러(clang), 제너레이터(Ninja), vcpkg 툴체인, 빌드 폴더는 `01_Server/Src/CMakePresets.json`에 정의되어 있습니다. VSCode의 CMake Tools와 터미널/`tasks.json` 빌드가 같은 프리셋을 사용합니다.
+
+| 프리셋 | 빌드 폴더 | 용도 |
+|---|---|---|
+| `server-debug` | `build/server/Linux/` | mainserver 컨테이너 기본 |
+| `client-debug` | `build/client/Linux/` | dummyclient 컨테이너 기본 |
 
 ### 테스트 실행
 

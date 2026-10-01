@@ -1,0 +1,39 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "server-debug",
+            "displayName": "Server (Clang, Debug)",
+            "inherits": "base",
+            "binaryDir": "${sourceDir}/build/server/Linux"
+        },
+        {
+            "name": "client-debug",
+            "displayName": "Client (Clang, Debug)",
+            "inherits": "base",
+            "binaryDir": "${sourceDir}/build/client/Linux"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "server-debug",
+            "displayName": "Server (Clang, Debug)",
+            "configurePreset": "server-debug"
+        },
+        {
+            "name": "client-debug",
+            "displayName": "Client (Clang, Debug)",
+            "configurePreset": "client-debug"
+        }
+    ]
+}

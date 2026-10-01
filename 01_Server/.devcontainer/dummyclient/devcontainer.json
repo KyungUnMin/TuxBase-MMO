@@ -21,7 +21,6 @@
                 "editor.detectIndentation": false,
                 "editor.guides.indentation": false,
                 "editor.formatOnSave": false,
-                "cmake.buildDirectory": "${workspaceFolder}/build/client/Linux",
                 "C_Cpp.intelliSenseEngine": "disabled",
                 "clangd.arguments": [
                     "--compile-commands-dir=build/client/Linux",

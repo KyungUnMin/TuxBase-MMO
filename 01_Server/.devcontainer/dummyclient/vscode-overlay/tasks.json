@@ -6,10 +6,7 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                "-S", ".",
-                "-B", "build/server/Linux",
-                "-G", "Ninja",
-                "-DCMAKE_BUILD_TYPE=Debug"
+                "--preset", "server-debug"
             ],
             "group": "build",
             "problemMatcher": []
@@ -19,7 +16,7 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                "--build", "build/server/Linux", "-j"
+                "--build", "--preset", "server-debug"
             ],
             "group": "build",
             "problemMatcher": [
@@ -31,10 +28,7 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                "-S", ".",
-                "-B", "build/client/Linux",
-                "-G", "Ninja",
-                "-DCMAKE_BUILD_TYPE=Debug"
+                "--preset", "client-debug"
             ],
             "group": "build",
             "problemMatcher": []
@@ -44,7 +38,7 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                "--build", "build/client/Linux", "-j"
+                "--build", "--preset", "client-debug"
             ],
             "group": "build",
             "problemMatcher": [
