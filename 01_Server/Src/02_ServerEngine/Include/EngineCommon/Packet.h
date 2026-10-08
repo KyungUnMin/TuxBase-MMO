@@ -7,6 +7,7 @@ struct PacketHeader
     UINT16 m_size = 0;
     UINT16 m_id = 0;
     static constexpr UINT32 kHeaderSize = sizeof(m_size) + sizeof(m_id);
+    static constexpr UINT32 kMaxPacketSize = 1024 * 8;
 };
 #pragma pack(pop)
 

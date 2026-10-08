@@ -2,7 +2,7 @@
 
 ## 1. 개요
 
-네트워크 송수신 데이터를 저장하는 **고정 크기(컴파일 타임 `kCapacity`) 원형 버퍼(Circular Buffer)** 구현체.
+**고정 크기(컴파일 타임 `kCapacity`) 원형 버퍼(Circular Buffer)** 구현체.
 **Zero-Copy** 접근을 위한 RAII 핸들(`RingBufferWriter`, `RingBufferReader`)을 제공한다.
 
 각 예약(reserve)은 항상 버퍼 안의 **연속된 단일 구간**으로만 반환된다. 즉, 하나의 예약이 버퍼 끝과 처음에 걸쳐 두 조각으로 쪼개지는 경우는 없다 (Scatter-Gather 방식이 아니다). 꼬리 공간이 부족하면 그 경계를 `m_tailCursor`에 기록해두고 앞쪽(index 0)으로 건너뛰어 쓰기를 이어가는 **tail-skip 방식**을 사용한다.
@@ -229,6 +229,8 @@ RingBuffer rb;  // 크기는 컴파일 타임 kCapacity로 고정, 생성자에 
 ```
 
 ### 6.2 CreateAllWriter / CreateAllReader (소켓 I/O 등, 크기를 미리 모를 때)
+
+> 주의: `CreateAllWriter`는 tail-skip 없이 물리 끝까지 채우고 0번으로 넘어가므로, 이렇게 쌓은 데이터를 `CreateReader(패킷 크기)`로 읽으면 버퍼 끝에 걸친 패킷은 clamp되어 영원히 읽지 못한다. 이 때문에 세션 송수신 버퍼는 `RingBuffer`를 쓰지 않는다 — 수신은 [RecvBuffer](RecvBuffer.md), 송신은 [BoostSession 송신 큐](../../02_ServerEngine/Boost/BoostSession_SendQueue.md)를 사용한다.
 
 ```cpp
 RingBufferWriter writer = rb.CreateAllWriter();

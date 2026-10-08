@@ -1,6 +1,7 @@
 #pragma once
-#include "DataStruct/RingBuffer.h"
-#include "EngineCommon/PacketSerializer.h"
+#include "DataStruct/RecvBuffer.h"
+#include "EngineCommon/Packet.h"
+#include "DataStruct/SendBuffer.h"
 #include "EngineInterface/ISession.h"
 
 class BoostNetEngine;
@@ -9,8 +10,12 @@ class BoostSession : public ISession
 {
     using Socket = boost::asio::ip::tcp::socket;
     using IoContext = boost::asio::io_context;
+    using ErrorCode = boost::system::error_code;
 
 public:
+    static constexpr UINT32 kRecvBufferSize = PacketHeader::kMaxPacketSize * 2;
+    static constexpr UINT32 kMaxSendQueueSize = 1024;
+
     BoostSession() = delete;
     BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
     ~BoostSession() = default;
@@ -25,32 +30,19 @@ public:
     void CloseSocket();
     Socket& GetSocket() { return m_socket; }
 
-    template <typename TMessage>
-    bool SendPacket(UINT16 packetId, const TMessage& message)
-    {
-        return PacketSerializer::Write(m_sendBuffer, packetId, message);
-    }
+    bool Send(std::shared_ptr<const SendBuffer> sendBuffer) override;
 
-    bool PeekPacketHeader(PacketHeader& outHeader)
-    {
-        return PacketSerializer::PeekHeader(m_recvBuffer, outHeader);
-    }
-
-    template <typename TMessage>
-    bool ReadPacket(const PacketHeader& header, TMessage& outMessage)
-    {
-        return PacketSerializer::Read(m_recvBuffer, header, outMessage);
-    }
-
-    template <typename TMessage>
-    std::unique_ptr<TMessage> ReadPacket(const PacketHeader& header)
-    {
-        return PacketSerializer::Read<TMessage>(m_recvBuffer, header);
-    }
+private:
+    void FlushSendQueue();
+    void CompleteSend(const ErrorCode& errorCode);
 
 private:
     Socket m_socket;
     BoostNetEngine& m_netEngine;
-    RingBuffer m_recvBuffer;
-    RingBuffer m_sendBuffer;
+    RecvBuffer m_recvBuffer;
+
+    std::mutex m_sendMutex;
+    std::vector<std::shared_ptr<const SendBuffer>> m_sendQueue;
+    bool m_isSending;
+    std::vector<std::shared_ptr<const SendBuffer>> m_sendingBuffers;
 };

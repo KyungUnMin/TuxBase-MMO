@@ -1,5 +1,7 @@
 # 패킷 바디 설계: 완전 Zero-Copy 대신 Protobuf를 택한 이유
 
+> 참고: 이 문서는 세션 버퍼가 `RingBuffer`였던 시점 기준이다. 이후 세션 버퍼는 수신 `RecvBuffer` + 송신 큐로 바뀌어서, 아래의 `RingBuffer` 관련 서술과 `PacketSerializer.h` 줄 번호는 현재 코드와 다르다. 변경 내용은 [SessionBuffer_RingBufferToRecvBufferAndSendQueue.md](SessionBuffer_RingBufferToRecvBufferAndSendQueue.md) 참고.
+
 ## 1. 배경
 
 원래 계획은 패킷 구조를 밑바닥부터 직접 설계해서, 헤더뿐 아니라 **바디까지 포함해 완전히 Zero-Copy로 처리**하는 것이었다. `RingBuffer`(`01_ServerBase/Include/DataStruct/RingBuffer.h`) 자체는 이 목표에 맞게 설계돼 있다 — `RingBufferReader::As<T>()`로 버퍼 메모리를 그대로 포인터 캐스팅해서 쓰는, 복사가 전혀 없는 접근 방식이다.
