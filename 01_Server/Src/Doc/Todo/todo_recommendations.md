@@ -1,6 +1,7 @@
 # TuxBase-MMO 작업 로드맵 (상세)
 
 > 기준: 2026-09-21, 커밋 `07d251f`.
+> 갱신: 2026-10-08, 커밋 `903c88a` — 세션 버퍼를 `RingBuffer`에서 수신 `RecvBuffer` + 송신 큐로 교체하고 P0-2를 완료했다. 배경은 `DevNotes/Highlights/SessionBuffer_RingBufferToRecvBufferAndSendQueue.md` 참고.
 > 이전 버전은 Acceptor·Session·직렬화 등을 미구현으로 적고 있어 현재 코드와 어긋났기 때문에 전면 교체했다.
 > 단순 체크리스트는 `TodoList.txt`에 있다. 이 문서는 각 항목의 **근거, 완료 조건, 설계 트레이드오프**를 담는다.
 
@@ -16,16 +17,16 @@
 
 ---
 
-## 2. 현재 상태 (2026-09-21)
+## 2. 현재 상태 (2026-10-08)
 
 | 영역 | 있음 | 없음 |
 |---|---|---|
-| 기반(01_ServerBase) | RingBuffer(Reader/Writer RAII)와 테스트, LockQueue, LockStack, Thread, Logger, SerialGenerator, Assert/BackTrace/SignalHandler | Logger의 엔진 연동 |
-| 엔진(02_ServerEngine) | `BoostNetEngine`(io_context, 스레드, 세션 풀), 서버 accept, 클라이언트 connect + 재시도, `PacketSerializer`, `Packet` | 세션 수신/송신 루프, 세션 반납, 세션 ID 조회, 디스패처 구현 |
+| 기반(01_ServerBase) | `RecvBuffer`(수신용 선형 버퍼), `SendBuffer`(송신용 불변 버퍼), RingBuffer(Reader/Writer RAII, 현재 세션에서는 미사용)와 테스트, LockQueue, LockStack, Thread, Logger, SerialGenerator, Assert/BackTrace/SignalHandler | Logger의 엔진 연동 |
+| 엔진(02_ServerEngine) | `BoostNetEngine`(io_context, 스레드, 세션 풀), 서버 accept, 클라이언트 connect + 재시도, `PacketSerializer`, `Packet`, `ISession::Send` Port, 세션 송신 큐(`async_write` 체인, 세션별 strand) | 세션 수신 루프, 세션 반납, 세션 ID 조회, 디스패처 구현 |
 | 앱(03_ServerApp) | 엔진 기동 | 컨텐츠 스레드, 핸들러 |
 | 더미 클라이언트(04_DummyClient) | 1024세션 접속 (5초 후 종료) | 패킷 송수신, 시나리오 |
 | 프로토콜(03_Share) | `C2S_Login`, `S2C_LoginResponse` | 이동/입장 등 컨텐츠 패킷 |
-| 테스트(99_Test) | RingBuffer, StopWatch | 직렬화, 세션, 서버-클라이언트 통합 테스트 |
+| 테스트(99_Test) | RingBuffer, RecvBuffer, StopWatch, 직렬화(`PacketSerializer`), 세션 송신(루프백 소켓) | 세션 수신, 서버-클라이언트 통합 테스트 |
 
 **검증된 사실**: 2026-09-20에 서버/더미클라이언트를 별도 컨테이너로 띄워 연결 수립을 확인했다.
 `mainserver` DNS 해석, `0.0.0.0:13000` LISTEN, 서버·클라이언트 양쪽 ESTABLISHED 1018개가 일치했다.
@@ -39,15 +40,17 @@
 |---|---|---|---|---|
 | 1 | `class INetEngine; class ISession;`가 클래스 **안**에 있어 전역 타입이 아닌 중첩 클래스를 선언함 | `PacketDispatcherBase.h:8-9` | `Dispatch(ISession&, …)`가 실제 `ISession`과 다른 타입이라 연결 불가 | P0-4 |
 | 2 | 기본 생성자만 `delete`이고 다른 생성자가 없음 | `PacketDispatcherBase.h:12` | 파생 클래스를 생성할 수 없음 | P0-4 |
-| 3 | `EnqueuePacket` 선언만 있고 정의가 없음 (`.cpp`는 include 한 줄) | `PacketDispatcherBase.h:20`, `PacketDispatcherBase.cpp:1` | 호출 시 링크 에러 | P0-4 |
+| 3 | `EnqueuePacket` 선언만 있고 정의가 없음 (`.cpp`는 include 한 줄). 인자도 세션에서 더 이상 쓰지 않는 `RingBufferReader&&`임 | `PacketDispatcherBase.h:20`, `PacketDispatcherBase.cpp:1` | 호출 시 링크 에러. 수신 버퍼 메모리를 다른 스레드로 넘기는 형태라, I/O 스레드에서 파싱을 끝낸 `Packet`을 받도록 바꿔야 함 | P0-4 |
 | 4 | 패킷 ID로 어떤 Protobuf 타입을 만들지 알 방법이 없음 | `PacketDispatcherBase.h:20`, `Packet.h` | 수신 바디를 `PacketBody`로 만들 수 없음 | P0-4 |
-| 5 | `ISession`이 빈 인터페이스라 상위 계층이 응답을 보낼 수 없음 | `ISession.h` | Clean Architecture상 앱 계층이 `BoostSession`을 직접 알아야 하는 압력 | P0-2 |
-| 6 | `SendPacket`이 송신 버퍼에 쓰기만 하고 전송을 시작하지 않음 | `BoostSession.h:29-32` | 보낸 데이터가 소켓으로 나가지 않음 | P0-2 |
-| 7 | `Start()`가 소켓 옵션만 설정하고 `async_read`가 없음 | `BoostSession.cpp:9-16` | 수신 불가, 종료 감지 불가 | P0-1 |
+| 5 | ~~`ISession`이 빈 인터페이스라 상위 계층이 응답을 보낼 수 없음~~ | `ISession.h:18` | **해결(2026-10-08)**: `ISession::Send(shared_ptr<const SendBuffer>)` 추가 | 완료 |
+| 6 | ~~`SendPacket`이 송신 버퍼에 쓰기만 하고 전송을 시작하지 않음~~ | `BoostSession.cpp:27-109` | **해결(2026-10-08)**: `SendPacket` 제거, 송신 큐 + `async_write` 체인으로 교체 | 완료 |
+| 7 | `Start()`가 소켓 옵션만 설정하고 `async_read`가 없음 | `BoostSession.cpp:12-18` | 수신 불가, 종료 감지 불가 | P0-1 |
 | 8 | 정상 연결의 종료·반납 경로가 없음. `PushSession`은 accept/connect 실패와 엔진 종료에서만 호출됨 | `BoostNetEngineServer.cpp:64,70`, `BoostNetEngineClient.cpp:53,61` | 실측: 클라이언트 1회 실행(세션 1024개) 후 서버에 `CLOSE_WAIT` 1019개가 남음. 서버 풀도 1024개라 재접속 시 accept 가능한 세션이 급감함 | P0-3 |
 | 9 | `FindSession`이 `nullptr`을 반환하는 stub | `BoostNetEngine.h:24-28` | 세션 ID로 세션을 찾을 수 없음 | P0-3 |
-| 10 | `std::cout` 출력과 `TODO : LOG_ERROR` 주석이 남아 있음 | `BoostSession.cpp:15`, `BoostNetEngineClient.cpp:65,82`, `BoostNetEngineServer.cpp:52,73` | 오류가 조용히 사라지고 서버 쪽 관측 수단이 없음 | P1-7 |
+| 10 | `std::cout` 출력과 `TODO : LOG_ERROR` 주석이 남아 있음 | `BoostSession.cpp:17`, `BoostNetEngineClient.cpp:65,82`, `BoostNetEngineServer.cpp:52,73`, `PacketSerializer.cpp:10,25`(`TODO : Error Log`) | 오류가 조용히 사라지고 서버 쪽 관측 수단이 없음 | P1-7 |
 | 11 | `SignalHandler`가 종료 플래그를 세팅하지만 `main`이 이를 보지 않고 `sleep_for(100000s)`로 대기 | `SignalHandler_linux.cpp:19-30`, `03_ServerApp/main.cpp:10` | Ctrl+C/`docker stop`으로 `Stop()` 경로를 타지 못함 | P1-8 |
+| 12 | `RingBuffer` 가득 참 오판정: 비어 있지만 커서가 중간인 상태에서 tail-skip으로 정확히 그 위치만큼 쓰면 `m_isFull`이 켜짐 | `RingBuffer.cpp:42-47`, `:194` | 다음 읽기 전까지 쓰기 예약이 거부됨 (데이터 손상 없음) | 보류 (현재 `RingBuffer`를 쓰는 곳이 없음. 다시 쓸 때 수정) |
+| 13 | `RingBuffer`에서 `CreateAllWriter`로 쌓은 스트림을 `CreateReader(패킷 크기)`로 읽으면 버퍼 끝에 걸친 패킷을 영원히 읽지 못함 | `RingBuffer.cpp:84-93`, `:116`, `:193` | 수신 버퍼로 쓰면 세션 수신이 영구 정지 | 우회 완료 (세션 수신은 `RecvBuffer` 사용). `RingBuffer` 자체는 보류 |
 
 ---
 
@@ -59,33 +62,37 @@
 README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가 실제로 동작하게 되는 단계다.
 
 #### P0-1. 세션 수신 루프
-- **작업**: `Start()` 이후 `async_read_some` → RingBuffer 적재 → `PeekPacketHeader`로 완성 여부 판별 → 파싱 → 디스패처로 전달 → 다시 `async_read_some`.
-- **확인 필요**: 수신용 연속 쓰기 영역을 현재 `CreateWriter` API로 확보할 수 있는지. tail-skip 방식이라 연속 공간이 부족할 수 있으므로 필요하면 API를 확장한다.
-- **DoD**: 패킷을 1바이트씩 쪼개 보내도, 여러 패킷을 한 번에 붙여 보내도 모두 올바르게 파싱한다는 테스트 (TCP 스트림 특성 검증).
-- **코드**: `BoostSession.cpp:9-16`, `BoostSession.h:34-49`, `PacketSerializer.h`
-- **포트폴리오 포인트**: README의 RingBuffer/패킷 경계 설명과 직접 연결되는 핵심 구간.
+- **작업**: `Start()` 이후 `async_read_some`(`RecvBuffer::GetWritableSpan`) → `CommitWrite` → `PacketSerializer::PeekHeader`/`IsValidHeader`로 완성 여부 판별 → `Read`로 파싱 → 디스패처로 전달 → `Compact` → 다시 `async_read_some`. 수신 핸들러는 세션 strand 위에서 실행되므로 `m_recvBuffer`에 락을 걸지 않는다.
+- **선행 완료(2026-10-08)**: 수신 버퍼를 `RecvBuffer`(선형 버퍼 + 앞으로 당기기)로 교체했다. tail-skip `RingBuffer`는 버퍼 끝에 걸친 패킷을 읽지 못해 수신에 쓸 수 없었다(결함 13). 사용 패턴은 `ClassExplanation/01_ServerBase/DataStruct/RecvBuffer.md` 4장 참고.
+- **DoD**: 패킷을 1바이트씩 쪼개 보내도, 여러 패킷을 한 번에 붙여 보내도 모두 올바르게 파싱한다는 테스트 (TCP 스트림 특성 검증). 버퍼·직렬화 단위로는 통과했다(`PacketSerializerTest.OneByteAtATime`, `ManyPacketsAcrossBufferEnd`). 남은 것은 **실제 소켓 수신 루프를 거치는** 테스트다.
+- **의존**: 파싱한 패킷을 넘길 디스패처(P0-4)가 필요하다.
+- **코드**: `BoostSession.cpp:12-18`, `BoostSession.h:42`, `PacketSerializer.cpp:31-64`, `RecvBuffer.cpp`
+- **포트폴리오 포인트**: TCP 스트림의 패킷 경계 처리. README의 RingBuffer 설명은 현재 구현과 다르다 (D-3).
 
-#### P0-2. 세션 송신 경로 + `ISession` 전송 Port
-- **작업**:
+#### P0-2. 세션 송신 경로 + `ISession` 전송 Port — 완료 (2026-10-08)
+- **구현 결과**: `PacketSerializer::Serialize`가 패킷 1개를 `SendBuffer` 1개로 만들고, `ISession::Send(std::shared_ptr<const SendBuffer>)`로 세션 송신 큐에 넣는다. 아래 원래 계획의 `Send(packetId, body)` 시그니처 대신, 한 번 직렬화한 버퍼를 여러 세션이 공유할 수 있는 형태를 택했다. 상세는 `ClassExplanation/02_ServerEngine/Boost/BoostSession_SendQueue.md` 참고.
+- **검증**: `BoostSessionSendTest`(루프백 소켓) — 순서 보장, 다중 생산자, 브로드캐스트, 큐 초과 시 연결 종료. 실제 서버-더미클라이언트 간 수신 확인은 P0-5에서 한다.
+- **작업(원래 계획)**:
   - `SendPacket` 이후 송신을 시작한다. `async_write`는 세션당 **동시에 하나만** 걸고(in-flight 플래그), 완료 핸들러에서 남은 데이터를 이어 보낸다.
   - `ISession`에 `virtual bool Send(UINT16 packetId, const PacketBody& body) = 0` 같은 전송 Port를 추가한다. 템플릿은 가상 함수가 될 수 없어서 `PacketBody`(protobuf `Message`) 참조를 받는다.
   - 컨텐츠 스레드(쓰기)와 I/O 스레드(읽기)의 경계는 5장 결정 D를 따른다.
 - **DoD**: 서버가 보낸 패킷을 클라이언트가 수신한다. 앱 계층 코드가 `Boost/` 헤더를 include하지 않는다.
-- **코드**: `BoostSession.h:29-32`, `ISession.h`
+- **코드**: `BoostSession.cpp:27-109`, `ISession.h:18`, `PacketSerializer.cpp:3-29`, `SendBuffer.h`
 - **포트폴리오 포인트**: Clean Architecture Port 확장. 안쪽 계층이 바깥 구현체를 모르는 상태 유지.
 
 #### P0-3. 세션 수명 관리 + 세션 ID 조회
 - **작업**:
   - 소켓 종료 감지(read 에러/EOF) → 소켓 닫기 → 버퍼 초기화 → 풀 반납.
   - 접속 시 세션 ID 부여(`SerialGenerator` 활용), `FindSession(sessionId)` 구현.
-  - 풀 반납 시 세션 상태를 재사용 가능하게 초기화한다.
+  - 풀 반납 시 세션 상태를 재사용 가능하게 초기화한다. 송신 큐(`m_sendQueue`, `m_sendingBuffers`, `m_isSending`)와 수신 버퍼(`RecvBuffer::Clear`)를 포함한다.
+  - 소켓을 닫는 동작은 세션 strand로 넘긴다. 현재 `BoostNetEngineClient::RetryConnect`가 `CloseSocket()`을 strand 밖에서 직접 호출한다(`BoostNetEngineClient.cpp:86`). 연결 전이라 지금은 겹칠 작업이 없지만, 종료 경로를 만들 때 함께 정리한다 (`LearnWithAI/Asio_Strand.md` 주의할 점 참고).
 - **DoD**: 더미 클라이언트를 여러 번 실행해도 서버 세션 풀이 매번 복원된다. 클라이언트 종료 후 서버에 `CLOSE_WAIT`이 남지 않는다.
 - **코드**: `BoostNetEngineServer.cpp:56-77`, `BoostNetEngine.h:24-28`, `SerialGenerator.h`
 - **포트폴리오 포인트**: 스마트 포인터 기반 소유권 설계. 5장 결정 A 참고.
 
 #### P0-4. 디스패처 완성 + 메시지 팩토리
 - **작업**:
-  - 결함 1~4 수정(전방 선언 위치, 생성자, `EnqueuePacket` 구현).
+  - 결함 1~4 수정(전방 선언 위치, 생성자, `EnqueuePacket` 구현). `EnqueuePacket`은 `RingBufferReader&&` 대신 파싱이 끝난 `Packet&&`을 받도록 바꾼다.
   - 패킷 ID → Protobuf 메시지 생성 방식을 정한다 (5장 결정 E).
   - `PacketId → 핸들러` 등록 구조를 만든다 (5장 결정 C).
   - 컨텐츠 스레드 루프: `LockQueue<Packet>`에서 꺼내 `Dispatch` 호출 (5장 결정 B).
@@ -100,8 +107,9 @@ README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가
 
 #### P0-6. 입력 방어
 - **작업**: `m_size`가 헤더 크기 미만이거나 상한 초과일 때, 알 수 없는 패킷 ID일 때, 파싱에 실패할 때 해당 연결을 종료한다.
+- **선행 완료(2026-10-08)**: 크기 상한 `PacketHeader::kMaxPacketSize`(8KB)와 `PacketSerializer::IsValidHeader`가 있다. 남은 것은 수신 루프(P0-1)에서 검증 실패 시 연결을 끊는 처리와, 알 수 없는 패킷 ID 처리(P0-4)다.
 - **DoD**: 잘못된 헤더/ID/바디를 보내는 테스트 클라이언트로 서버가 죽지 않고 해당 세션만 끊는 것을 확인한다.
-- **코드**: `PacketSerializer.h:13,46-66`, `Packet.h:39-45`
+- **코드**: `PacketSerializer.cpp:43-64`, `Packet.h:10,40-47`
 - **포트폴리오 포인트**: 서버 개발자 면접에서 자주 다뤄지는 "신뢰할 수 없는 입력" 처리.
 
 ---
@@ -109,7 +117,7 @@ README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가
 ### P1. 엔진 마감 (P0 직후, 작은 단위)
 
 #### P1-7. 로깅 연동
-- `std::cout`(`BoostSession.cpp:15`)과 `TODO : LOG_ERROR` 주석 4곳을 `Logger`로 교체한다.
+- `std::cout`(`BoostSession.cpp:17`)과 `TODO : LOG_ERROR` / `TODO : Error Log` 주석(`BoostSession.cpp`, `BoostNetEngineClient.cpp`, `BoostNetEngineServer.cpp`, `PacketSerializer.cpp`)을 `Logger`로 교체한다.
 - **DoD**: 접속/종료/오류가 서버 로그에 남는다. 엔진 코드에 `std::cout`이 없다.
 
 #### P1-8. Graceful shutdown
@@ -118,7 +126,7 @@ README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가
 - **코드**: `03_ServerApp/main.cpp:10`, `SignalHandler_linux.cpp`
 
 #### P1-9. 하트비트/타임아웃
-- `BoostSession.cpp:13`에 "keep_alive는 하트비트로 대체"라고 적어 둔 결정을 실제로 구현한다. 일정 시간 패킷이 없으면 세션을 정리한다.
+- `BoostSession.cpp:15`에 "keep_alive는 하트비트로 대체"라고 적어 둔 결정을 실제로 구현한다. 일정 시간 패킷이 없으면 세션을 정리한다.
 - **DoD**: 응답 없는 클라이언트가 타임아웃 후 세션이 반납된다.
 
 #### P1-10. 실행 인자/환경변수
@@ -155,9 +163,9 @@ README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가
 
 | # | 작업 |
 |---|---|
-| D-1 | 새 핵심 클래스(`BoostSession`, 디스패처 등) 추가·변경 시 `DevNotes/ClassExplanation/`을 같이 갱신한다 (현재는 `RingBuffer.md`만 존재). |
-| D-2 | 결정 A/C/E 등 흥미로운 트레이드오프는 `DevNotes/Highlights/`에 정리한다 (`PacketBody_ProtobufVsZeroCopy.md` 형식 참고). |
-| D-3 | README의 아키텍처 다이어그램 중 Packet Parser → LockQueue → Content Thread는 P0-1, P0-4 이전에는 구현되지 않았다. P0 완료 후 문구를 실제와 맞춘다. |
+| D-1 | 새 핵심 클래스(`BoostSession`, 디스패처 등) 추가·변경 시 `DevNotes/ClassExplanation/`을 같이 갱신한다. 현재 문서: `RingBuffer.md`, `RecvBuffer.md`, `BoostSession_SendQueue.md` (뒤 두 개는 2026-10-08 작성). |
+| D-2 | 결정 A/C/E 등 흥미로운 트레이드오프는 `DevNotes/Highlights/`에 정리한다 (`PacketBody_ProtobufVsZeroCopy.md` 형식 참고). 2026-10-08에 `SessionBuffer_RingBufferToRecvBufferAndSendQueue.md`(결정 D 포함)를 작성했다. |
+| D-3 | README의 아키텍처 다이어그램 중 Packet Parser → LockQueue → Content Thread는 P0-1, P0-4 이전에는 구현되지 않았다. P0 완료 후 문구를 실제와 맞춘다. 또한 README가 `RingBuffer`를 세션 수신 버퍼로 설명하는데, 2026-10-08부터 수신은 `RecvBuffer`, 송신은 큐 방식이라 이 부분도 함께 고친다. |
 
 ---
 
@@ -198,7 +206,7 @@ P0~P1은 단일 로직 스레드로 진행한다. 필요성이 실측(P2-15)으�
 | `SendPacket` 호출 스레드가 송신 버퍼에 직접 쓰고 락으로 보호 | 구현이 단순함 | 브로드캐스트처럼 여러 스레드가 같은 세션에 쓰면 락 경합. 락을 잡은 채 protobuf 직렬화를 하게 될 수 있음 |
 | 송신 요청을 세션의 I/O 컨텍스트에 `post`해서 I/O 스레드에서만 버퍼를 다룸 | 버퍼 접근이 한 스레드로 모여 락이 필요 없음 | 요청마다 핸들러 할당과 큐잉 비용, 직렬화 위치를 어디로 둘지 결정 필요 |
 
-먼저 **단일 로직 스레드가 유일한 송신 producer**라는 전제(결정 B)를 확인한다. 이 전제가 성립하면 RingBuffer가 SPSC로 안전한지(`RingBuffer.md` 확인 필요)만 검증하면 되고, 성립하지 않으면 두 번째 방식을 택한다.
+**결정(2026-10-08)**: 두 방식을 섞었다. 직렬화는 호출 스레드에서 락 없이 `SendBuffer`로 끝내고, 세션은 뮤텍스로 보호하는 큐에 `shared_ptr`만 넣는다(락 구간은 포인터 하나 넣고 빼기). 소켓을 다루는 전송 시작은 세션 strand로 `post`한다. 생산자가 하나든 여럿이든 그대로 동작하므로 결정 B가 바뀌어도 수정할 필요가 없다. 표의 `SendPacket`과 "송신 버퍼"는 교체 전 구조 기준 표현이다. 대안 비교는 `Highlights/SessionBuffer_RingBufferToRecvBufferAndSendQueue.md` 4장 참고.
 
 ### E. 패킷 ID → Protobuf 메시지 생성
 
@@ -219,11 +227,11 @@ P0~P1은 단일 로직 스레드로 진행한다. 필요성이 실측(P2-15)으�
 | 이전 항목 | 처리 | 사유 |
 |---|---|---|
 | 1. TCP Acceptor | 완료 | `BoostNetEngineServer`에 구현됨 |
-| 2. TCP Session | 일부 완료 → P0-1/2/3 | 세션 클래스와 풀은 있으나 읽기/쓰기/수명이 없음 |
+| 2. TCP Session | 일부 완료 → P0-1/3 | 세션 클래스, 풀, 쓰기(P0-2 완료)는 있으나 읽기/수명이 없음 |
 | 3. IOContext Runner | 완료 | `BoostNetEngine::Start` (스레드 N개로 `io_context.run`) |
 | 4. 패킷 직렬화 | 완료 | `PacketSerializer` (수신 측 연동은 P0-1) |
 | 5. 세션 매니저 | P0-3에 흡수 | 별도 `ISessionManager` 없이 풀 + `FindSession`으로 충분 |
-| 6. RingBuffer 복구 | 완료 | 빌드되고 테스트 존재 |
+| 6. RingBuffer 복구 | 완료 | 빌드되고 테스트 존재. 단 2026-10-08부터 세션에서는 쓰지 않고 코드만 유지 (결함 12, 13) |
 | 7. Config 시스템 | 축소 → P1-10 | JSON/TOML 파서는 포트폴리오 가치 대비 공수가 큼. 인자/환경변수로 충분 |
 | 8. 네임스페이스 통일 | 제외 | 코드에 `common::` 네임스페이스가 존재하지 않음 (익명 네임스페이스/별칭만 있음) |
 | 9. SignalHandler | 구현됨 → P1-8 | 남은 것은 `main`과의 연결 |

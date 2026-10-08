@@ -1,12 +1,18 @@
 상세 설명/완료 조건/트레이드오프: todo_recommendations.md (번호 동일)
 
 [P0] 패킷 통신 - 최우선
-[ ] P0-1  세션 수신 루프 (async_read -> RingBuffer -> 패킷 파싱 -> 디스패처)
-[ ] P0-2  세션 송신 경로 + ISession 전송 Port
+[ ] P0-1  세션 수신 루프 (async_read -> RecvBuffer -> 패킷 파싱 -> 디스패처)
+          - [x] 수신 버퍼 RecvBuffer + 파싱(PeekHeader/IsValidHeader/Read) 단위 테스트
+          - [ ] 소켓 수신 루프 (P0-4 디스패처 필요)
+[x] P0-2  세션 송신 경로 + ISession 전송 Port (SendBuffer + 세션 송신 큐, 실서버 왕복 확인은 P0-5)
 [ ] P0-3  세션 수명 관리 (종료 감지, 풀 반납, 세션 ID, FindSession)
+          - 반납 시 송신 큐/수신 버퍼 초기화, 소켓 닫기는 strand로 넘기기
 [ ] P0-4  디스패처 완성 (결함 수정, 메시지 팩토리, 핸들러 등록, 컨텐츠 스레드)
+          - EnqueuePacket 인자를 RingBufferReader -> Packet 으로 변경
 [ ] P0-5  첫 E2E: C2S_Login -> S2C_LoginResponse 왕복 + 통합 테스트
 [ ] P0-6  입력 방어 (잘못된 size/ID/파싱 실패 시 연결 종료)
+          - [x] 크기 상한(kMaxPacketSize) + IsValidHeader
+          - [ ] 수신 루프에서 검증 실패 시 연결 종료
 
 [P1] 엔진 마감
 [ ] P1-7  엔진 로깅 연동 (std::cout, TODO LOG_ERROR 제거)
@@ -22,9 +28,9 @@
 [ ] P2-15 봇 부하 테스트 + 벤치마크 수치 기록
 
 [병행] 문서
-[ ] D-1   핵심 클래스 변경 시 ClassExplanation 갱신
-[ ] D-2   설계 결정은 Highlights에 정리
-[ ] D-3   P0 완료 후 README 아키텍처 문구를 실제 구현과 맞추기
+[ ] D-1   핵심 클래스 변경 시 ClassExplanation 갱신 (RecvBuffer.md, BoostSession_SendQueue.md 작성됨)
+[ ] D-2   설계 결정은 Highlights에 정리 (SessionBuffer_RingBufferToRecvBufferAndSendQueue.md 작성됨)
+[ ] D-3   P0 완료 후 README 아키텍처 문구를 실제 구현과 맞추기 (RingBuffer 수신 버퍼 서술 포함)
 
 [기존 항목]
 [x] ReadMe.md 파일 작성
@@ -32,3 +38,6 @@
 [x] 에이전트 가이드라인 파일 재작성 (CLAUDE.md)
 [x] 빌드 안됨 (현재 컨테이너에서 빌드/실행 확인됨)
 [ ] 비활성화 전처리기 색상 처리 안됨 (에디터 설정 문제, 미확인)
+
+[보류]
+[ ] RingBuffer 가득 참 오판정 버그 (결함 12) - 현재 쓰는 곳이 없어 보류, 다시 쓸 때 수정
