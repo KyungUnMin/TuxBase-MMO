@@ -138,7 +138,7 @@ echo "${TUXBASE_ROLE:-none}"; ls /.dockerenv
 1. `BoostNetEngine` (INetEngine 구현체): io_context + 스레드풀 + 세션 풀 관리
 2. `BoostSession` (ISession 구현체): 소켓 per 세션, `RingBuffer` 기반 recv/send 버퍼
 3. `PacketSerializer`: `RingBuffer` ↔ Protobuf 메시지 직렬화/역직렬화
-4. `PacketDispatcherBase`: 수신 패킷을 `LockQueue`에 적재 후 `Dispatch()` 가상함수로 처리
+4. `PacketDispatcher`: 수신 패킷을 `LockQueue`에 적재 후, 컨텐츠 스레드가 `Register<TMessage>`로 등록된 핸들러를 호출
 
 ### 패킷 포맷
 

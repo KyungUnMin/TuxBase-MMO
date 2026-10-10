@@ -40,7 +40,7 @@
 
 ## 5. 파생 결정: 바디 객체의 소유권 (Arena → `unique_ptr`)
 
-바디가 항상 새로 생성되는 객체라면, 그 객체를 누가 얼마나 들고 있을지 정해야 한다. 처음엔 `google::protobuf::Arena`로 일괄 할당/해제하는 방식을 검토했으나, `Packet`이 큐(`PacketDispatcherBase`의 `LockQueue<Packet>`)에 실려 다른 스레드에서 나중에 처리될 수 있는 구조라 **Arena의 수명을 누가 책임지는지가 불명확**했다 — `Packet`이 살아있는 동안 그 `Packet`을 만든 Arena도 같이 살아있어야 하는데, 이를 보장하는 코드가 없었다.
+바디가 항상 새로 생성되는 객체라면, 그 객체를 누가 얼마나 들고 있을지 정해야 한다. 처음엔 `google::protobuf::Arena`로 일괄 할당/해제하는 방식을 검토했으나, `Packet`이 큐(`PacketDispatcher`의 `LockQueue<Packet>`)에 실려 다른 스레드에서 나중에 처리될 수 있는 구조라 **Arena의 수명을 누가 책임지는지가 불명확**했다 — `Packet`이 살아있는 동안 그 `Packet`을 만든 Arena도 같이 살아있어야 하는데, 이를 보장하는 코드가 없었다.
 
 세 가지 대안을 비교했다:
 

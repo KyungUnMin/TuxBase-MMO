@@ -38,10 +38,10 @@
 
 | # | 결함 | 위치 | 영향 | 처리 |
 |---|---|---|---|---|
-| 1 | `class INetEngine; class ISession;`가 클래스 **안**에 있어 전역 타입이 아닌 중첩 클래스를 선언함 | `PacketDispatcherBase.h:8-9` | `Dispatch(ISession&, …)`가 실제 `ISession`과 다른 타입이라 연결 불가 | P0-4 |
-| 2 | 기본 생성자만 `delete`이고 다른 생성자가 없음 | `PacketDispatcherBase.h:12` | 파생 클래스를 생성할 수 없음 | P0-4 |
-| 3 | `EnqueuePacket` 선언만 있고 정의가 없음 (`.cpp`는 include 한 줄). 인자도 세션에서 더 이상 쓰지 않는 `RingBufferReader&&`임 | `PacketDispatcherBase.h:20`, `PacketDispatcherBase.cpp:1` | 호출 시 링크 에러. 수신 버퍼 메모리를 다른 스레드로 넘기는 형태라, I/O 스레드에서 파싱을 끝낸 `Packet`을 받도록 바꿔야 함 | P0-4 |
-| 4 | 패킷 ID로 어떤 Protobuf 타입을 만들지 알 방법이 없음 | `PacketDispatcherBase.h:20`, `Packet.h` | 수신 바디를 `PacketBody`로 만들 수 없음 | P0-4 |
+| 1 | ~~`class INetEngine; class ISession;`가 클래스 **안**에 있어 전역 타입이 아닌 중첩 클래스를 선언함~~ | `PacketDispatcher.h:7-8` | **해결(2026-10-10)**: 전역 전방 선언으로 이동 | 완료 |
+| 2 | ~~기본 생성자만 `delete`이고 다른 생성자가 없음~~ | `PacketDispatcher.h:14` | **해결(2026-10-10)**: `PacketDispatcher(INetEngine&)` 추가. 상속 구조는 없애고 구체 클래스로 변경 | 완료 |
+| 3 | ~~`EnqueuePacket` 선언만 있고 정의가 없음. 인자도 `RingBufferReader&&`임~~ | `PacketDispatcher.cpp:21-24` | **해결(2026-10-10)**: 파싱이 끝난 `Packet&&`을 받아 큐에 넣도록 구현 | 완료 |
+| 4 | ~~패킷 ID로 어떤 Protobuf 타입을 만들지 알 방법이 없음~~ | `PacketDispatcher.h:23-41`, `PacketDispatcher.cpp:10-19` | **해결(2026-10-10)**: `Register<TMessage>`로 등록한 팩토리를 `CreateBody(packetId)`로 호출 | 완료 |
 | 5 | ~~`ISession`이 빈 인터페이스라 상위 계층이 응답을 보낼 수 없음~~ | `ISession.h:18` | **해결(2026-10-08)**: `ISession::Send(shared_ptr<const SendBuffer>)` 추가 | 완료 |
 | 6 | ~~`SendPacket`이 송신 버퍼에 쓰기만 하고 전송을 시작하지 않음~~ | `BoostSession.cpp:27-109` | **해결(2026-10-08)**: `SendPacket` 제거, 송신 큐 + `async_write` 체인으로 교체 | 완료 |
 | 7 | `Start()`가 소켓 옵션만 설정하고 `async_read`가 없음 | `BoostSession.cpp:12-18` | 수신 불가, 종료 감지 불가 | P0-1 |
@@ -90,14 +90,17 @@ README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가
 - **코드**: `BoostNetEngineServer.cpp:56-77`, `BoostNetEngine.h:24-28`, `SerialGenerator.h`
 - **포트폴리오 포인트**: 스마트 포인터 기반 소유권 설계. 5장 결정 A 참고.
 
-#### P0-4. 디스패처 완성 + 메시지 팩토리
+#### P0-4. 디스패처 완성 + 메시지 팩토리 — 완료 (2026-10-10)
+- **구현 결과**: `PacketDispatcherBase`(상속 구조)를 구체 클래스 `PacketDispatcher`로 바꿨다. `Register<TMessage>(packetId, handler)`가 메시지 팩토리와 핸들러를 한 번에 등록하고, I/O 스레드는 `CreateBody` → `EnqueuePacket`, 컨텐츠 스레드는 `ProcessPackets`를 호출한다. 상세는 `ClassExplanation/02_ServerEngine/EngineCommon/PacketDispatcher.md`, 설계 근거는 `Highlights/PacketDispatcher_RegisterInsteadOfInheritance.md` 참고.
+- **검증**: `PacketDispatcherTest` 6개(팩토리 타입, 미등록 ID, 핸들러 전달, ID별 분기, 버림 처리, 다른 스레드에서 넣은 패킷의 순서). 스텁 `INetEngine`/`ISession` 기준이며, 실제 소켓을 거치는 전달은 P0-1, P0-3 이후에 확인한다.
+- **남은 것**: `BoostNetEngine::FindSession`이 `nullptr`만 반환해 실제 서버에서는 핸들러까지 도달하지 않는다(P0-3). 미등록 ID 수신 시 연결 종료(P0-6). 큐가 비면 1ms 쉬는 방식이며 조건 변수 대기는 보류했다.
 - **작업**:
   - 결함 1~4 수정(전방 선언 위치, 생성자, `EnqueuePacket` 구현). `EnqueuePacket`은 `RingBufferReader&&` 대신 파싱이 끝난 `Packet&&`을 받도록 바꾼다.
   - 패킷 ID → Protobuf 메시지 생성 방식을 정한다 (5장 결정 E).
   - `PacketId → 핸들러` 등록 구조를 만든다 (5장 결정 C).
   - 컨텐츠 스레드 루프: `LockQueue<Packet>`에서 꺼내 `Dispatch` 호출 (5장 결정 B).
 - **DoD**: 수신 패킷이 I/O 스레드 → `LockQueue` → 컨텐츠 스레드 → 핸들러 순으로 전달된다. 핸들러 등록 코드는 특정 패킷 타입을 컴파일 타임에 검증한다.
-- **코드**: `PacketDispatcherBase.h`, `PacketDispatcherBase.cpp`, `Packet.h`
+- **코드**: `PacketDispatcher.h`, `PacketDispatcher.cpp`, `Packet.h`, `03_ServerApp/Source/main.cpp`
 - **포트폴리오 포인트**: Factory/Command 패턴의 실질적 필요가 있는 지점(다형성 + 확장 지점). 도입 근거를 `Highlights/`에 정리한다.
 
 #### P0-5. 첫 E2E: 로그인 왕복
@@ -199,6 +202,8 @@ P0~P1은 단일 로직 스레드로 진행한다. 필요성이 실측(P2-15)으�
 
 성능 우열은 측정 전에는 주장하지 않는다. 지금은 안전성과 가독성 기준으로 선택한다.
 
+**결정(2026-10-10)**: 템플릿 등록 + 내부 `unordered_map`으로 확정했다. 시그니처는 `Register<TMessage>(packetId, handler)`이고, 결정 E의 팩토리도 같은 호출에서 함께 등록한다.
+
 ### D. 송신 스레드 경계
 
 | 방식 | 장점 | 단점 |
@@ -218,6 +223,8 @@ P0~P1은 단일 로직 스레드로 진행한다. 필요성이 실측(P2-15)으�
 
 팩토리 패턴을 쓰는 이유는 다형성(`PacketBody` = `google::protobuf::Message`)과 확장 지점(패킷 추가)이 실제로 있기 때문이다. 패턴 자체가 목적은 아니다. 도입 근거는 `Highlights/`에 정리한다.
 
+**결정(2026-10-10)**: 등록형 팩토리로 확정했다. 근거는 `Highlights/PacketDispatcher_RegisterInsteadOfInheritance.md`에 정리했다.
+
 ---
 
 ## 6. 이전 목록 대비 정리
@@ -235,7 +242,7 @@ P0~P1은 단일 로직 스레드로 진행한다. 필요성이 실측(P2-15)으�
 | 7. Config 시스템 | 축소 → P1-10 | JSON/TOML 파서는 포트폴리오 가치 대비 공수가 큼. 인자/환경변수로 충분 |
 | 8. 네임스페이스 통일 | 제외 | 코드에 `common::` 네임스페이스가 존재하지 않음 (익명 네임스페이스/별칭만 있음) |
 | 9. SignalHandler | 구현됨 → P1-8 | 남은 것은 `main`과의 연결 |
-| 10. 패킷 핸들러 디스패처 | P0-4 | |
+| 10. 패킷 핸들러 디스패처 | 완료 | `PacketDispatcher` (P0-4) |
 | 11. CI/CD | 제외 | 실서비스 운영 관점. 포트폴리오 가치 대비 공수가 큼 |
 | 12. clang-tidy/format | 제외 | `.clang-format`은 이미 있음. 추가 자동화는 우선순위 낮음 |
 | 13. Logger 파일 Sink | 후순위 | 엔진 연동(P1-7)이 먼저. 파일 출력은 필요할 때 |

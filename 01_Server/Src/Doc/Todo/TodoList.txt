@@ -3,12 +3,12 @@
 [P0] 패킷 통신 - 최우선
 [ ] P0-1  세션 수신 루프 (async_read -> RecvBuffer -> 패킷 파싱 -> 디스패처)
           - [x] 수신 버퍼 RecvBuffer + 파싱(PeekHeader/IsValidHeader/Read) 단위 테스트
-          - [ ] 소켓 수신 루프 (P0-4 디스패처 필요)
+          - [ ] 소켓 수신 루프 (P0-4 디스패처 완료, 세션이 디스패처를 참조할 경로 결정 필요)
 [x] P0-2  세션 송신 경로 + ISession 전송 Port (SendBuffer + 세션 송신 큐, 실서버 왕복 확인은 P0-5)
 [ ] P0-3  세션 수명 관리 (종료 감지, 풀 반납, 세션 ID, FindSession)
           - 반납 시 송신 큐/수신 버퍼 초기화, 소켓 닫기는 strand로 넘기기
-[ ] P0-4  디스패처 완성 (결함 수정, 메시지 팩토리, 핸들러 등록, 컨텐츠 스레드)
-          - EnqueuePacket 인자를 RingBufferReader -> Packet 으로 변경
+[x] P0-4  디스패처 완성 (PacketDispatcher: Register<TMessage>로 팩토리+핸들러 등록, 컨텐츠 스레드 루프)
+          - 실제 서버에서 핸들러 도달은 P0-1(수신 루프), P0-3(FindSession) 이후
 [ ] P0-5  첫 E2E: C2S_Login -> S2C_LoginResponse 왕복 + 통합 테스트
 [ ] P0-6  입력 방어 (잘못된 size/ID/파싱 실패 시 연결 종료)
           - [x] 크기 상한(kMaxPacketSize) + IsValidHeader
