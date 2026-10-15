@@ -1,7 +1,7 @@
 #include "Boost/BoostNetEngineClient.h"
 
-BoostNetEngineClient::BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 sessionCount /*= 1*/, UINT32 threadCount /*= 1*/)
-    : BoostNetEngine(sessionCount, threadCount)
+BoostNetEngineClient::BoostNetEngineClient(PacketDispatcher& packetDispatcher, std::string_view host, UINT16 port, UINT32 sessionCount /*= 1*/, UINT32 threadCount /*= 1*/)
+    : BoostNetEngine(packetDispatcher, sessionCount, threadCount)
     , m_connectRetryTimer(GetIoContext())
 {
     boost::system::error_code errorCode;

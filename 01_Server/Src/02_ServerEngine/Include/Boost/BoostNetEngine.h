@@ -4,6 +4,8 @@
 #include "Threading/Thread.h"
 #include "EngineInterface/INetEngine.h"
 
+class PacketDispatcher;
+
 class BoostNetEngine : public INetEngine
 {
     using IoContext = boost::asio::io_context;
@@ -11,7 +13,7 @@ class BoostNetEngine : public INetEngine
 
 public:
     BoostNetEngine() = delete;
-    BoostNetEngine(UINT32 sessionCount, UINT32 threadCount);
+    BoostNetEngine(PacketDispatcher& packetDispatcher, UINT32 sessionCount, UINT32 threadCount);
     virtual ~BoostNetEngine();
 
     BoostNetEngine(const BoostNetEngine&) = delete;
@@ -21,6 +23,7 @@ public:
 
     void Start();
     void Stop();
+    PacketDispatcher& GetPacketDispatcher() { return m_packetDispatcher; }
     ISession* FindSession(UINT64 serialId) override
     {
         // TODO : 나중에 만들자~
@@ -37,6 +40,7 @@ protected:
     bool TryPopSession(BoostSession*& session);
 
 private:
+    PacketDispatcher& m_packetDispatcher;
     std::atomic<bool> m_isRun;
     std::vector<Thread> m_threads;
     IoContext m_ioContext;

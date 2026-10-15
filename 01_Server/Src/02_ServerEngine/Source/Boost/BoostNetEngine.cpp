@@ -1,7 +1,8 @@
 #include "Boost/BoostNetEngine.h"
 
-BoostNetEngine::BoostNetEngine(UINT32 sessionCount, UINT32 threadCount)
-    : m_isRun(false)
+BoostNetEngine::BoostNetEngine(PacketDispatcher& packetDispatcher, UINT32 sessionCount, UINT32 threadCount)
+    : m_packetDispatcher(packetDispatcher)
+    , m_isRun(false)
     , m_threads(threadCount)
     , m_workGuard(boost::asio::make_work_guard(m_ioContext))
     , m_sessions(sessionCount)

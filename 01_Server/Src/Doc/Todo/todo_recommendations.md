@@ -61,7 +61,11 @@
 목표: **DummyClient가 `C2S_Login`을 보내고, 서버가 `S2C_LoginResponse`로 응답하는 왕복**을 통합 테스트로 고정한다.
 README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가 실제로 동작하게 되는 단계다.
 
-#### P0-1. 세션 수신 루프
+#### P0-1. 세션 수신 루프 — 완료 (2026-10-10)
+- **구현 결과**: `BoostSession::Start()`가 세션 strand로 `Receive()`를 넘기고, `CompleteReceive` → `ParsePackets`(`PeekHeader` → `IsValidHeader` → `PacketDispatcher::CreateBody` → `Read` → `EnqueuePacket`) → `Compact` → `Receive` 순으로 반복한다. 잘못된 헤더 크기, 미등록 패킷 ID, 파싱 실패 시 소켓을 닫는다(P0-6). 바디 0바이트 패킷을 허용하도록 `Packet::IsValid`를 고쳤다.
+- **디스패처 연결**: 엔진 생성자에 `PacketDispatcher&`를 주입하고 세션은 `BoostNetEngine::GetPacketDispatcher()`로 접근한다. 디스패처와 엔진이 서로를 생성자에서 요구하지 않도록, 디스패처는 엔진을 멤버로 갖지 않고 `ProcessPackets(INetEngine&)` 인자로 받는다.
+- **검증**: `BoostSessionReceiveTest` 6개(실제 서버 엔진 + 루프백 소켓) — 1바이트씩 전송, 수신 버퍼보다 큰 묶음 전송, 빈 바디, 잘못된 크기·미등록 ID·파싱 실패 시 연결 종료.
+- **남은 것**: 세션 ID가 없어 `Packet`의 세션 ID는 0이다. 종료 감지 후 세션 정리와 풀 반납도 없다 (둘 다 P0-3).
 - **작업**: `Start()` 이후 `async_read_some`(`RecvBuffer::GetWritableSpan`) → `CommitWrite` → `PacketSerializer::PeekHeader`/`IsValidHeader`로 완성 여부 판별 → `Read`로 파싱 → 디스패처로 전달 → `Compact` → 다시 `async_read_some`. 수신 핸들러는 세션 strand 위에서 실행되므로 `m_recvBuffer`에 락을 걸지 않는다.
 - **선행 완료(2026-10-08)**: 수신 버퍼를 `RecvBuffer`(선형 버퍼 + 앞으로 당기기)로 교체했다. tail-skip `RingBuffer`는 버퍼 끝에 걸친 패킷을 읽지 못해 수신에 쓸 수 없었다(결함 13). 사용 패턴은 `ClassExplanation/01_ServerBase/DataStruct/RecvBuffer.md` 4장 참고.
 - **DoD**: 패킷을 1바이트씩 쪼개 보내도, 여러 패킷을 한 번에 붙여 보내도 모두 올바르게 파싱한다는 테스트 (TCP 스트림 특성 검증). 버퍼·직렬화 단위로는 통과했다(`PacketSerializerTest.OneByteAtATime`, `ManyPacketsAcrossBufferEnd`). 남은 것은 **실제 소켓 수신 루프를 거치는** 테스트다.
@@ -108,7 +112,7 @@ README에 적은 "I/O 스레드 → LockQueue → 컨텐츠 스레드" 구조가
 - **DoD**: 서버와 클라이언트를 프로세스로 띄우는 통합 테스트(또는 스크립트)가 통과한다. DummyClient가 5초 후 무조건 종료하는 현재 구조(`04_DummyClient/main.cpp:9`)를 시나리오 완료 기준 종료로 바꾼다.
 - **코드**: `04_DummyClient/Source/main.cpp`, `03_ServerApp/Source/main.cpp`, `Example.proto`
 
-#### P0-6. 입력 방어
+#### P0-6. 입력 방어 — 완료 (2026-10-10, P0-1에서 함께 처리)
 - **작업**: `m_size`가 헤더 크기 미만이거나 상한 초과일 때, 알 수 없는 패킷 ID일 때, 파싱에 실패할 때 해당 연결을 종료한다.
 - **선행 완료(2026-10-08)**: 크기 상한 `PacketHeader::kMaxPacketSize`(8KB)와 `PacketSerializer::IsValidHeader`가 있다. 남은 것은 수신 루프(P0-1)에서 검증 실패 시 연결을 끊는 처리와, 알 수 없는 패킷 ID 처리(P0-4)다.
 - **DoD**: 잘못된 헤더/ID/바디를 보내는 테스트 클라이언트로 서버가 죽지 않고 해당 세션만 끊는 것을 확인한다.

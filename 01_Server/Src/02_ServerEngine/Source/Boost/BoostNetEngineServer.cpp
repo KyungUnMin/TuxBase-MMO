@@ -1,7 +1,7 @@
 #include "Boost/BoostNetEngineServer.h"
 
-BoostNetEngineServer::BoostNetEngineServer(UINT16 port, UINT32 sessionCount, UINT32 threadCount /*=1*/)
-    : BoostNetEngine(sessionCount, threadCount)
+BoostNetEngineServer::BoostNetEngineServer(PacketDispatcher& packetDispatcher, UINT16 port, UINT32 sessionCount, UINT32 threadCount /*=1*/)
+    : BoostNetEngine(packetDispatcher, sessionCount, threadCount)
     , m_port(port)
     , m_accepter(GetIoContext())
     , m_acceptRetryTimer(GetIoContext())

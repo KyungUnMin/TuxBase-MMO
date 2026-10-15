@@ -41,7 +41,7 @@ private:
     {
         // TODO : 나중에 m_sessionId 검사 추가?
         bool result = true;
-        result &= (PacketHeader::kHeaderSize < m_header.m_size);
+        result &= (PacketHeader::kHeaderSize <= m_header.m_size);
         result &= (m_body != nullptr);
         return result;
     }

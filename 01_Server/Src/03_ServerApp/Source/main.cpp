@@ -6,13 +6,13 @@ int main()
 {
     SignalHandler::InitSignal();
 
-    BoostNetEngineServer netEngine(13000, 1024, 5);
-    PacketDispatcher packetDispatcher(netEngine);
+    PacketDispatcher packetDispatcher;
+    BoostNetEngineServer netEngine(packetDispatcher, 13000, 1024, 5);
     netEngine.Start();
 
     while (true)
     {
-        if (0 == packetDispatcher.ProcessPackets())
+        if (0 == packetDispatcher.ProcessPackets(netEngine))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }

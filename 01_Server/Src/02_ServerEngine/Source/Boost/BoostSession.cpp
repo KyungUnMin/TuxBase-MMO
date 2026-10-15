@@ -1,4 +1,7 @@
 #include "Boost/BoostSession.h"
+#include "Boost/BoostNetEngine.h"
+#include "EngineCommon/PacketDispatcher.h"
+#include "EngineCommon/PacketSerializer.h"
 #include <iostream>
 
 BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
@@ -15,6 +18,11 @@ void BoostSession::Start()
     // m_socket.set_option(boost::asio::socket_base::keep_alive(true));  <- 하트비트로 대체
     m_socket.set_option(boost::asio::socket_base::linger(true, 0));
     std::cout << "BoostSessionStart" << std::endl;
+
+    boost::asio::post(m_socket.get_executor(), [this]()
+    {
+        this->Receive();
+    });
 }
 
 void BoostSession::CloseSocket()
@@ -22,6 +30,72 @@ void BoostSession::CloseSocket()
     boost::system::error_code errorCode;
     m_socket.shutdown(Socket::shutdown_both, errorCode);
     m_socket.close(errorCode);
+}
+
+void BoostSession::Receive()
+{
+    const std::span<BYTE> writableSpan = m_recvBuffer.GetWritableSpan();
+    m_socket.async_read_some(boost::asio::buffer(writableSpan.data(), writableSpan.size()), [this](const ErrorCode& errorCode, std::size_t recvSize)
+    {
+        this->CompleteReceive(errorCode, recvSize);
+    });
+}
+
+void BoostSession::CompleteReceive(const ErrorCode& errorCode, std::size_t recvSize)
+{
+    if (errorCode)
+    {
+        // TODO : 세션 정리 후 풀 반납 (P0-3)
+        CloseSocket();
+        return;
+    }
+
+    m_recvBuffer.CommitWrite(static_cast<UINT32>(recvSize));
+    if (false == ParsePackets())
+    {
+        // TODO : LOG_ERROR("Invalid packet")
+        CloseSocket();
+        return;
+    }
+
+    m_recvBuffer.Compact();
+    Receive();
+}
+
+bool BoostSession::ParsePackets()
+{
+    PacketDispatcher& packetDispatcher = m_netEngine.GetPacketDispatcher();
+
+    PacketHeader header;
+    while (PacketSerializer::PeekHeader(m_recvBuffer, header))
+    {
+        if (false == PacketSerializer::IsValidHeader(header))
+        {
+            return false;
+        }
+
+        if (m_recvBuffer.GetReadableSize() < header.m_size)
+        {
+            break;
+        }
+
+        std::unique_ptr<PacketBody> body = packetDispatcher.CreateBody(header.m_id);
+        if (nullptr == body)
+        {
+            return false;
+        }
+
+        if (false == PacketSerializer::Read(m_recvBuffer, header, *body))
+        {
+            return false;
+        }
+
+        // TODO : 세션 ID 부여 후 실제 값으로 교체 (P0-3)
+        static constexpr UINT64 kUnassignedSessionId = 0;
+        packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
+    }
+
+    return true;
 }
 
 bool BoostSession::Send(std::shared_ptr<const SendBuffer> sendBuffer)

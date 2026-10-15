@@ -10,8 +10,7 @@ class ISession;
 class PacketDispatcher
 {
 public:
-    PacketDispatcher() = delete;
-    explicit PacketDispatcher(INetEngine& netEngine);
+    PacketDispatcher() = default;
     ~PacketDispatcher() = default;
 
     PacketDispatcher(const PacketDispatcher&) = delete;
@@ -40,7 +39,7 @@ public:
 
     std::unique_ptr<PacketBody> CreateBody(UINT16 packetId) const;
     void EnqueuePacket(Packet&& packet);
-    UINT32 ProcessPackets();
+    UINT32 ProcessPackets(INetEngine& netEngine);
 
 private:
     struct PacketEntry
@@ -49,10 +48,9 @@ private:
         std::function<void(ISession&, const PacketBody&)> m_handler;
     };
 
-    void Dispatch(Packet&& packet);
+    void Dispatch(INetEngine& netEngine, Packet&& packet);
 
 private:
-    INetEngine& m_netEngine;
     std::unordered_map<UINT16, PacketEntry> m_entries;
     LockQueue<Packet> m_packetQueue;
 };

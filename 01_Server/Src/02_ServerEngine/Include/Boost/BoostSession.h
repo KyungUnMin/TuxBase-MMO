@@ -33,6 +33,10 @@ public:
     bool Send(std::shared_ptr<const SendBuffer> sendBuffer) override;
 
 private:
+    void Receive();
+    void CompleteReceive(const ErrorCode& errorCode, std::size_t recvSize);
+    bool ParsePackets();
+
     void FlushSendQueue();
     void CompleteSend(const ErrorCode& errorCode);
 
