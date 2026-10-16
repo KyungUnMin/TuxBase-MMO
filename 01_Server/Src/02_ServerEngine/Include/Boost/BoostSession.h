@@ -35,7 +35,7 @@ public:
 private:
     void Receive();
     void CompleteReceive(const ErrorCode& errorCode, std::size_t recvSize);
-    bool ParsePackets();
+    bool ProcessRecvPackets();
 
     void FlushSendQueue();
     void CompleteSend(const ErrorCode& errorCode);

@@ -2,49 +2,21 @@
 #include "EngineInterface/INetEngine.h"
 #include "EngineInterface/ISession.h"
 
-std::unique_ptr<PacketBody> PacketDispatcher::CreateBody(UINT16 packetId) const
+void PacketDispatcher::RegisterPacketHandler(UINT16 packetId, PacketHandler&& packetHandler)
 {
-    const std::unordered_map<UINT16, PacketEntry>::const_iterator iter = m_entries.find(packetId);
-    if (m_entries.end() == iter)
-    {
-        return nullptr;
-    }
-
-    return iter->second.m_createBody();
+    ASSERT(nullptr != packetHandler, "Handler is null");
+    ASSERT(false == m_packetHandlers.contains(packetId), "Packet id(%d) handler is already registered", packetId);
+    m_packetHandlers[packetId] = std::move(packetHandler);
 }
 
-void PacketDispatcher::EnqueuePacket(Packet&& packet)
+bool PacketDispatcher::ProcessPacket(const SPtr<ISession>& session, const UPtr<Packet>& packet)
 {
-    m_packetQueue.Push(std::move(packet));
-}
+    if (nullptr == session || nullptr == packet)
+        return false;
 
-UINT32 PacketDispatcher::ProcessPackets(INetEngine& netEngine)
-{
-    UINT32 processCount = 0;
-    Packet packet;
-    while (m_packetQueue.TryPop(packet))
-    {
-        Dispatch(netEngine, std::move(packet));
-        ++processCount;
-    }
-
-    return processCount;
-}
-
-void PacketDispatcher::Dispatch(INetEngine& netEngine, Packet&& packet)
-{
-    const std::unordered_map<UINT16, PacketEntry>::const_iterator iter = m_entries.find(packet.GetPacketId());
-    if (m_entries.end() == iter)
-    {
-        // TODO : Error Log
-        return;
-    }
-
-    ISession* session = netEngine.FindSession(packet.GetSessionId());
-    if (nullptr == session)
-    {
-        return;
-    }
-
-    iter->second.m_handler(*session, *packet.GetBody<PacketBody>());
+    PacketHeader packetHeader = packet->GetHeader();
+    Iterator findIter = m_packetHandlers.find(packetHeader.m_id);
+    ASSERT((findIter != m_packetHandlers.end()), "Packet id(%d) handler is not exists", packetId);
+    const PacketHandler& packetHandler = findIter->second;
+    return packetHandler(session, packet->GetBody());
 }

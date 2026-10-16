@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+// 클라이언트 -> 메인서버
+package proto.cli_to_msv;
+
+enum PacketID {
+    PACKET_ID_NONE      = 0;
+    ENTER_MAIN_SERVER   = 1;
+    TEST_CHAT           = 2;
+}
+
+message EnterMainServer {
+    string token = 1;
+}
+
+message TestChat {
+    string msg = 1;
+}

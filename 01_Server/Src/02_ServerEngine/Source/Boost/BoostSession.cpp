@@ -1,5 +1,6 @@
 #include "Boost/BoostSession.h"
 #include "Boost/BoostNetEngine.h"
+#include "EngineCommon/Packet.h"
 #include "EngineCommon/PacketDispatcher.h"
 #include "EngineCommon/PacketSerializer.h"
 #include <iostream>
@@ -51,7 +52,7 @@ void BoostSession::CompleteReceive(const ErrorCode& errorCode, std::size_t recvS
     }
 
     m_recvBuffer.CommitWrite(static_cast<UINT32>(recvSize));
-    if (false == ParsePackets())
+    if (false == ProcessRecvPackets())
     {
         // TODO : LOG_ERROR("Invalid packet")
         CloseSocket();
@@ -62,37 +63,13 @@ void BoostSession::CompleteReceive(const ErrorCode& errorCode, std::size_t recvS
     Receive();
 }
 
-bool BoostSession::ParsePackets()
+bool BoostSession::ProcessRecvPackets()
 {
-    PacketDispatcher& packetDispatcher = m_netEngine.GetPacketDispatcher();
-
-    PacketHeader header;
-    while (PacketSerializer::PeekHeader(m_recvBuffer, header))
+    PacketSerializer kumin_temp_pszer; // 임시.
+    while (UPtr<Packet> packet = kumin_temp_pszer.DeserializePacket(m_recvBuffer))
     {
-        if (false == PacketSerializer::IsValidHeader(header))
-        {
-            return false;
-        }
-
-        if (m_recvBuffer.GetReadableSize() < header.m_size)
-        {
-            break;
-        }
-
-        std::unique_ptr<PacketBody> body = packetDispatcher.CreateBody(header.m_id);
-        if (nullptr == body)
-        {
-            return false;
-        }
-
-        if (false == PacketSerializer::Read(m_recvBuffer, header, *body))
-        {
-            return false;
-        }
-
-        // TODO : 세션 ID 부여 후 실제 값으로 교체 (P0-3)
-        static constexpr UINT64 kUnassignedSessionId = 0;
-        packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
+        // packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
+        // packet을 엔진의 보관용 큐에 넣는다. 나중에 컨텐츠 스레드가 처리할 예정
     }
 
     return true;

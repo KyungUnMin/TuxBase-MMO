@@ -12,10 +12,10 @@ int main()
 
     while (true)
     {
-        if (0 == packetDispatcher.ProcessPackets(netEngine))
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
+        // if (0 == packetDispatcher.ProcessPackets(netEngine))
+        // {
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // }
     }
 
     netEngine.Stop();

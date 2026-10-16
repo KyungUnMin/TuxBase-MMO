@@ -11,7 +11,7 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 
 # Protobuf 설정
 find_package(Protobuf CONFIG REQUIRED)
-file(GLOB PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../03_Share/Protocol/*.proto")
+file(GLOB_RECURSE PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../03_Share/Protocol/*.proto")
 
 if(PROTO_FILES)
     protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})

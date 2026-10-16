@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package proto.log;
+
+enum LogType {
+    LOG_TYPE_NONE          = 0;
+    LOG_TYPE_ENTER_USER    = 1;
+}
