@@ -2,7 +2,6 @@
 #include "Boost/BoostNetEngine.h"
 #include "EngineCommon/Packet.h"
 #include "EngineCommon/PacketDispatcher.h"
-#include "EngineCommon/PacketSerializer.h"
 #include <iostream>
 
 BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
@@ -65,12 +64,12 @@ void BoostSession::CompleteReceive(const ErrorCode& errorCode, std::size_t recvS
 
 bool BoostSession::ProcessRecvPackets()
 {
-    PacketSerializer kumin_temp_pszer; // 임시.
-    while (UPtr<Packet> packet = kumin_temp_pszer.DeserializePacket(m_recvBuffer))
-    {
-        // packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
-        // packet을 엔진의 보관용 큐에 넣는다. 나중에 컨텐츠 스레드가 처리할 예정
-    }
+    // PacketSerializer kumin_temp_pszer; // 임시.
+    // while (UPtr<Packet> packet = kumin_temp_pszer.DeserializePacket(m_recvBuffer))
+    // {
+    //     // packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
+    //     // packet을 엔진의 보관용 큐에 넣는다. 나중에 컨텐츠 스레드가 처리할 예정
+    // }
 
     return true;
 }

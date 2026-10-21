@@ -1,5 +1,10 @@
 #pragma once
 
+
+/*-------------------------------------
+  Packet
+-------------------------------------*/
+
 #pragma pack(push, 1)
 struct PacketHeader
 {

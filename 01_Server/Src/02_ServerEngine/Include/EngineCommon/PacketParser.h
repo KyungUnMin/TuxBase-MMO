@@ -1,8 +1,6 @@
 #pragma once
 #include "EngineCommon/Packet.h"
 
-class RecvBuffer;
-
 class IPacketParser
 {
 public:
@@ -13,13 +11,15 @@ public:
     IPacketParser& operator=(const IPacketParser&) = delete;
     IPacketParser& operator=(IPacketParser&&) = delete;
 
-    static PacketHeader ParsePacketHeader(const RecvBuffer& recvBuffer);
+    static PacketHeader ParsePacketHeader(const class RecvBuffer& recvBuffer);
     virtual UPtr<PacketBody> ParsePacketBody(std::span<const BYTE> rawPacketBodyData) const = 0;
 };
 
 template <typename TPacketType>
 class PacketParser : public IPacketParser
 {
+    static_assert(std::is_base_of<PacketBody, TPacketType>::value, "TPacketType must inherit from PacketBody");
+
 public:
     PacketParser() = default;
     ~PacketParser() = default;

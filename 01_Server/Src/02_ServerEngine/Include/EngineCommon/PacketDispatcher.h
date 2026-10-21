@@ -1,8 +1,11 @@
 #pragma once
 #include "EngineCommon/Packet.h"
 
-class INetEngine;
 class ISession;
+
+/*-------------------------------------
+            PacketDispatcher
+-------------------------------------*/
 
 class PacketDispatcher
 {
