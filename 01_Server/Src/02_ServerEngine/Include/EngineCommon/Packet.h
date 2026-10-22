@@ -108,6 +108,8 @@ template <typename TPacketType>
 class PacketHandler : public IPacketHandler
 {
     static_assert(std::is_base_of<PacketBody, TPacketType>::value, "TPacketType must inherit from PacketBody");
+
+public:
     using RawPacketHandler = std::function<bool(const SPtr<ISession>& session, UPtr<TPacketType>&& packetBody)>;
 
 public:
@@ -133,4 +135,44 @@ public:
 
 private:
     RawPacketHandler m_rawPacketHandler;
+};
+
+/*-------------------------------------
+            PacketDispatcher
+-------------------------------------*/
+
+class PacketDispatcher
+{
+    struct PacketProcessGroup
+    {
+        UPtr<IPacketParser> parser;
+        UPtr<IPacketHandler> handler;
+    };
+
+    using Stl_HashMap = std::unordered_map<UINT16, PacketProcessGroup>;
+    using Const_Iterator = Stl_HashMap::const_iterator;
+
+public:
+    PacketDispatcher() = default;
+    ~PacketDispatcher() = default;
+    PacketDispatcher(const PacketDispatcher&) = delete;
+    PacketDispatcher(PacketDispatcher&&) = delete;
+    PacketDispatcher& operator=(const PacketDispatcher&) = delete;
+    PacketDispatcher& operator=(PacketDispatcher&&) = delete;
+
+    template <typename PacketType>
+    bool RegisterPacket(UINT16 packetId, PacketHandler<PacketType>::RawPacketHandler&& rawPacketHandler)
+    {
+        UPtr<IPacketParser> packetParser = std::make_unique<PacketParser<PacketType>>();
+        UPtr<IPacketHandler> packetHandler = std::make_unique<PacketHandler<PacketType>>(std::move(rawPacketHandler));
+
+        if (true == m_packetProcessGroup.contains(packetId))
+            return false;
+
+        return m_packetProcessGroup.insert(std::make_pair(packetId, PacketProcessGroup{std::move(packetParser), std::move(packetHandler)})).second;
+    }
+    // bool ProcessPacket(const SPtr<ISession>& session, const UPtr<Packet>& packet);
+
+private:
+    Stl_HashMap m_packetProcessGroup;
 };
