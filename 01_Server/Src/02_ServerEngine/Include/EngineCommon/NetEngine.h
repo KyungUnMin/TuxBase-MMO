@@ -34,6 +34,7 @@ protected:
     void Start() final;
     void Stop() final;
 
+    virtual void RunThreadWorker() = 0;
     void AddStartEvent(Delegate<void()>::Callback&& event);
     void AddStopEvent(Delegate<void()>::Callback&& event);
 

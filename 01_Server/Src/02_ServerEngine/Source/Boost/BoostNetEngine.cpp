@@ -16,6 +16,14 @@ BoostNetEngine::~BoostNetEngine()
 {
 }
 
+void BoostNetEngine::RunThreadWorker()
+{
+    while (IsRunning())
+    {
+        m_ioContext.run();
+    }
+}
+
 // void BoostNetEngine::Stop()
 // {
 //     bool expected = true;                                            // 기대값

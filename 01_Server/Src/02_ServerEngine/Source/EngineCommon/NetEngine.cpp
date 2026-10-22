@@ -10,14 +10,11 @@ void NetEngine::Start()
 {
     m_isRun.store(true);
 
-    // for (UINT32 i = 0; i < m_threads.size(); ++i)
-    // {
-    //     std::string threadName = "NetEngineIO_" + std::to_string(i);
-    //     m_threads[i].Start(threadName, [this]()
-    //     {
-    //         this->m_ioContext.run();
-    //     });
-    // }
+    for (UINT32 i = 0; i < m_threads.size(); ++i)
+    {
+        std::string threadName = "NetEngineIO_" + std::to_string(i);
+        m_threads[i].Start(threadName, std::bind(&NetEngine::RunThreadWorker, this));
+    }
 
     m_startDelegator.Invoke();
 }

@@ -26,6 +26,9 @@ protected:
     bool TryPopSession(BoostSession*& session);
 
 private:
+    void RunThreadWorker() final;
+
+private:
     IoContext m_ioContext;
     WorkGuard m_workGuard;
     std::vector<std::optional<BoostSession>> m_sessions;
