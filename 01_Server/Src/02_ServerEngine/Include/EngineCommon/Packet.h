@@ -75,21 +75,18 @@ public:
     PacketParser& operator=(const PacketParser&) = delete;
     PacketParser& operator=(PacketParser&&) = delete;
 
-    UPtr<PacketBody> ParsePacketBody(std::span<const BYTE> rawPacketBodyData) const override;
+    UPtr<PacketBody> ParsePacketBody(std::span<const BYTE> rawPacketBodyData) const override
+    {
+        UPtr<TPacketType> packetBody = std::make_unique<TPacketType>();
+        if (nullptr == packetBody)
+            return nullptr;
+
+        if (false == packetBody->ParseFromArray(rawPacketBodyData.data(), rawPacketBodyData.size_bytes()))
+            return nullptr;
+
+        return std::move(packetBody);
+    }
 };
-
-template <typename TPacketType>
-UPtr<PacketBody> PacketParser<TPacketType>::ParsePacketBody(std::span<const BYTE> rawPacketBodyData) const
-{
-    UPtr<TPacketType> packetBody = std::make_unique<TPacketType>();
-    if (nullptr == packetBody)
-        return nullptr;
-
-    if (false == packetBody->ParseFromArray(rawPacketBodyData.data(), rawPacketBodyData.size_bytes()))
-        return nullptr;
-
-    return std::move(packetBody);
-}
 
 /*-------------------------------------
             PacketHandler
@@ -125,18 +122,15 @@ public:
     PacketHandler& operator=(const PacketHandler&) = delete;
     PacketHandler& operator=(PacketHandler&&) = delete;
 
-    bool ProcessPacket(const SPtr<ISession>& session, UPtr<PacketBody>&& packetBody) override;
+    bool ProcessPacket(const SPtr<ISession>& session, UPtr<PacketBody>&& packetBody) override
+    {
+        std::unique_ptr<TPacketType> derivedPacketBody = static_cast<TPacketType*>(packetBody.release());
+        if (nullptr == derivedPacketBody || nullptr == m_rawPacketHandler)
+            return false;
+
+        return m_rawPacketHandler(session, derivedPacketBody);
+    }
 
 private:
     RawPacketHandler m_rawPacketHandler;
 };
-
-template <typename TPacketType>
-bool PacketHandler<TPacketType>::ProcessPacket(const SPtr<ISession>& session, UPtr<PacketBody>&& packetBody)
-{
-    std::unique_ptr<TPacketType> derivedPacketBody = static_cast<TPacketType*>(packetBody.release());
-    if (nullptr == derivedPacketBody || nullptr == m_rawPacketHandler)
-        return false;
-
-    return m_rawPacketHandler(session, derivedPacketBody);
-}
