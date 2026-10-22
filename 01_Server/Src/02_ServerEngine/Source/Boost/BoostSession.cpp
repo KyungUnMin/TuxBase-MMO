@@ -1,14 +1,13 @@
 #include "Boost/BoostSession.h"
-#include "Boost/BoostNetEngine.h"
 #include "EngineCommon/Packet.h"
 
-BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
-    : m_socket(boost::asio::make_strand(ioContext))
-    , m_netEngine(netEngine)
-    , m_recvBuffer(kRecvBufferSize, PacketHeader::kMaxPacketSize)
-    , m_isSending(false)
-{
-}
+// BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
+//     : m_socket(boost::asio::make_strand(ioContext))
+//     , m_netEngine(netEngine)
+//     , m_recvBuffer(kRecvBufferSize, PacketHeader::kMaxPacketSize)
+//     , m_isSending(false)
+// {
+// }
 
 void BoostSession::Start()
 {
@@ -32,32 +31,32 @@ void BoostSession::CloseSocket()
 
 void BoostSession::Receive()
 {
-    const std::span<BYTE> writableSpan = m_recvBuffer.GetWritableSpan();
-    m_socket.async_read_some(boost::asio::buffer(writableSpan.data(), writableSpan.size()), [this](const ErrorCode& errorCode, std::size_t recvSize)
-    {
-        this->CompleteReceive(errorCode, recvSize);
-    });
+    // const std::span<BYTE> writableSpan = m_recvBuffer.GetWritableSpan();
+    // m_socket.async_read_some(boost::asio::buffer(writableSpan.data(), writableSpan.size()), [this](const ErrorCode& errorCode, std::size_t recvSize)
+    // {
+    //     this->CompleteReceive(errorCode, recvSize);
+    // });
 }
 
 void BoostSession::CompleteReceive(const ErrorCode& errorCode, std::size_t recvSize)
 {
-    if (errorCode)
-    {
-        // TODO : 세션 정리 후 풀 반납 (P0-3)
-        CloseSocket();
-        return;
-    }
+    // if (errorCode)
+    // {
+    //     // TODO : 세션 정리 후 풀 반납 (P0-3)
+    //     CloseSocket();
+    //     return;
+    // }
 
-    m_recvBuffer.CommitWrite(static_cast<UINT32>(recvSize));
-    if (false == ProcessRecvPackets())
-    {
-        // TODO : LOG_ERROR("Invalid packet")
-        CloseSocket();
-        return;
-    }
+    // m_recvBuffer.CommitWrite(static_cast<UINT32>(recvSize));
+    // if (false == ProcessRecvPackets())
+    // {
+    //     // TODO : LOG_ERROR("Invalid packet")
+    //     CloseSocket();
+    //     return;
+    // }
 
-    m_recvBuffer.Compact();
-    Receive();
+    // m_recvBuffer.Compact();
+    // Receive();
 }
 
 bool BoostSession::ProcessRecvPackets()

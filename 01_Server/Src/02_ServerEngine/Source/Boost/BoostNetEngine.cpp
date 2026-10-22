@@ -1,15 +1,14 @@
 #include "Boost/BoostNetEngine.h"
+#include "DataStruct/Factory.h"
+#include "Boost/BoostSession.h"
 
-BoostNetEngine::BoostNetEngine(UINT32 sessionCount, UINT32 threadCount)
+// using BoostSessionFactory = Factory<ISession, BoostSession>;
+// sessionCount, std::make_unique<BoostSessionFactory>()
+
+BoostNetEngine::BoostNetEngine(UINT32 threadCount, UINT32 sessionCount)
     : NetEngine(threadCount)
     , m_workGuard(boost::asio::make_work_guard(m_ioContext))
-    , m_sessions(sessionCount)
 {
-    for (UINT32 i = 0; i < sessionCount; ++i)
-    {
-        BoostSession& session = m_sessions[i].emplace(*this, m_ioContext);
-        m_sessionPool.Push(&session);
-    }
 }
 
 BoostNetEngine::~BoostNetEngine()
@@ -22,6 +21,11 @@ void BoostNetEngine::RunThreadWorker()
     {
         m_ioContext.run();
     }
+}
+
+void BoostNetEngine::Init()
+{
+    // CreateSessions()
 }
 
 // void BoostNetEngine::Stop()
@@ -41,13 +45,3 @@ void BoostNetEngine::RunThreadWorker()
 //         thread.Join();
 //     }
 // }
-
-void BoostNetEngine::PushSession(BoostSession* session)
-{
-    m_sessionPool.Push(session);
-}
-
-bool BoostNetEngine::TryPopSession(BoostSession*& session)
-{
-    return m_sessionPool.TryPop(session);
-}

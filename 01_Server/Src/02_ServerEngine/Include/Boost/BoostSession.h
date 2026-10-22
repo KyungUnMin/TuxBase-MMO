@@ -6,7 +6,7 @@
 
 class BoostNetEngine;
 
-class BoostSession : public ISession
+class BoostSession : public Session
 {
     using Socket = boost::asio::ip::tcp::socket;
     using IoContext = boost::asio::io_context;
@@ -16,8 +16,8 @@ public:
     static constexpr UINT32 kRecvBufferSize = PacketHeader::kMaxPacketSize * 2;
     static constexpr UINT32 kMaxSendQueueSize = 1024;
 
-    BoostSession() = delete;
-    BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
+    BoostSession() = default;
+    // BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
     ~BoostSession() = default;
 
     BoostSession(const BoostSession&) = delete;
@@ -42,8 +42,7 @@ private:
 
 private:
     Socket m_socket;
-    BoostNetEngine& m_netEngine;
-    RecvBuffer m_recvBuffer;
+    // RecvBuffer m_recvBuffer;
 
     std::mutex m_sendMutex;
     std::vector<std::shared_ptr<const SendBuffer>> m_sendQueue;

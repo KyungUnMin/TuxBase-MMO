@@ -2,6 +2,10 @@
 #include "Packet.h"
 #include "Threading/Thread.h"
 #include "DataStruct/Delegate.h"
+#include "DataStruct/Factory.h"
+#include "types.h"
+
+class ISession;
 
 class INetEngine
 {
@@ -20,8 +24,12 @@ public:
 class NetEngine : public INetEngine
 {
 public:
-    explicit NetEngine(UINT32 threadCount);
+    using SessionFactory = IFactory<ISession>;
+
+    NetEngine() = delete;
+    NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory);
     ~NetEngine() override = default;
+
     NetEngine(const NetEngine&) = delete;
     NetEngine(NetEngine&&) = delete;
     NetEngine& operator=(const NetEngine&) = delete;
@@ -33,8 +41,9 @@ public:
 protected:
     void Start() final;
     void Stop() final;
-
     virtual void RunThreadWorker() = 0;
+
+    bool CreateSessions(UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory);
     void AddStartEvent(Delegate<void()>::Callback&& event);
     void AddStopEvent(Delegate<void()>::Callback&& event);
 
@@ -44,5 +53,7 @@ private:
     Delegate<void()> m_stopDelegator;
 
     std::vector<Thread> m_threads;
+    UPtr<SessionFactory> m_sessionFactory;
+    std::vector<SPtr<ISession>> m_sessions;
     PacketDispatcher m_packetDispatcher;
 };

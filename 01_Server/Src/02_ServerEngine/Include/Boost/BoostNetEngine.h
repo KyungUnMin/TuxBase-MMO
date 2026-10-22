@@ -1,6 +1,5 @@
 #pragma once
 #include "Boost/BoostSession.h"
-#include "DataStruct/LockStack.h"
 #include "EngineCommon/NetEngine.h"
 
 class PacketDispatcher;
@@ -12,7 +11,7 @@ class BoostNetEngine : public NetEngine
 
 public:
     BoostNetEngine() = delete;
-    BoostNetEngine(UINT32 sessionCount, UINT32 threadCount);
+    BoostNetEngine(UINT32 threadCount, UINT32 sessionCount);
     virtual ~BoostNetEngine();
 
     BoostNetEngine(const BoostNetEngine&) = delete;
@@ -21,9 +20,8 @@ public:
     BoostNetEngine& operator=(BoostNetEngine&&) = delete;
 
 protected:
+    void Init() override;
     IoContext& GetIoContext() { return m_ioContext; }
-    void PushSession(BoostSession* session);
-    bool TryPopSession(BoostSession*& session);
 
 private:
     void RunThreadWorker() final;
@@ -31,6 +29,4 @@ private:
 private:
     IoContext m_ioContext;
     WorkGuard m_workGuard;
-    std::vector<std::optional<BoostSession>> m_sessions;
-    LockStack<BoostSession*> m_sessionPool;
 };
