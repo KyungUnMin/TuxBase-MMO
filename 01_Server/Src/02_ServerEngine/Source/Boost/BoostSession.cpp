@@ -1,8 +1,6 @@
 #include "Boost/BoostSession.h"
 #include "Boost/BoostNetEngine.h"
 #include "EngineCommon/Packet.h"
-#include "EngineCommon/PacketDispatcher.h"
-#include <iostream>
 
 BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
     : m_socket(boost::asio::make_strand(ioContext))

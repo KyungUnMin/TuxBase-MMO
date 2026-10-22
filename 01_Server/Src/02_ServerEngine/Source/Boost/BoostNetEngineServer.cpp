@@ -1,7 +1,7 @@
 #include "Boost/BoostNetEngineServer.h"
 
-BoostNetEngineServer::BoostNetEngineServer(PacketDispatcher& packetDispatcher, UINT16 port, UINT32 sessionCount, UINT32 threadCount /*=1*/)
-    : BoostNetEngine(packetDispatcher, sessionCount, threadCount)
+BoostNetEngineServer::BoostNetEngineServer(UINT16 port, UINT32 sessionCount, UINT32 threadCount /*=1*/)
+    : BoostNetEngine(sessionCount, threadCount)
     , m_port(port)
     , m_accepter(GetIoContext())
     , m_acceptRetryTimer(GetIoContext())
@@ -13,15 +13,15 @@ BoostNetEngineServer::~BoostNetEngineServer()
     BoostNetEngine::Stop();
 }
 
-void BoostNetEngineServer::OnStart()
-{
-    using BoostTcp = boost::asio::ip::tcp;
-    m_accepter.open(BoostTcp::v4());
-    m_accepter.set_option(BoostTcp::acceptor::reuse_address(true));
-    m_accepter.bind(BoostTcp::endpoint(BoostTcp::v4(), m_port));
-    m_accepter.listen();
-    Accept();
-}
+// void BoostNetEngineServer::OnStart()
+// {
+//     using BoostTcp = boost::asio::ip::tcp;
+//     m_accepter.open(BoostTcp::v4());
+//     m_accepter.set_option(BoostTcp::acceptor::reuse_address(true));
+//     m_accepter.bind(BoostTcp::endpoint(BoostTcp::v4(), m_port));
+//     m_accepter.listen();
+//     Accept();
+// }
 
 void BoostNetEngineServer::Accept()
 {
@@ -80,8 +80,8 @@ void BoostNetEngineServer::CompleteAccept(BoostSession* session, const ErrorCode
     Accept();
 }
 
-void BoostNetEngineServer::OnStop()
-{
-    m_accepter.close();
-    m_acceptRetryTimer.cancel();
-}
+// void BoostNetEngineServer::OnStop()
+// {
+//     m_accepter.close();
+//     m_acceptRetryTimer.cancel();
+// }
