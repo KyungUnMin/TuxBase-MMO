@@ -1,6 +1,9 @@
-#include "EngineCommon/PacketParser.h"
-#include "DataStruct/RecvBuffer.h"
 #include "EngineCommon/Packet.h"
+#include "DataStruct/RecvBuffer.h"
+
+/*-------------------------------------
+  PacketParser
+-------------------------------------*/
 
 PacketHeader IPacketParser::ParsePacketHeader(const RecvBuffer& recvBuffer)
 {

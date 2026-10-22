@@ -2,7 +2,7 @@
 #include <Boost/BoostNetEngineServer.h>
 #include <EngineCommon/PacketDispatcher.h>
 #include "Cli2Msv.pb.h"
-#include "EngineCommon/PacketParser.h"
+#include "EngineCommon/Packet.h"
 #include "types.h"
 
 int main()
