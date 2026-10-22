@@ -2,7 +2,7 @@
 #include "DataStruct/RecvBuffer.h"
 #include "EngineCommon/Packet.h"
 #include "DataStruct/SendBuffer.h"
-#include "EngineInterface/ISession.h"
+#include "EngineCommon/Session.h"
 
 class BoostNetEngine;
 
