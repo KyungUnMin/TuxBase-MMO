@@ -1,6 +1,159 @@
 #include "DataStruct/RingBuffer.h"
 #include "Verify/Assert.h"
 
+/*-------------------------------------
+  RingBufferReader
+-------------------------------------*/
+
+RingBufferReader::RingBufferReader()
+    : m_owner(nullptr)
+    , m_ptr(nullptr)
+    , m_size(0)
+{
+}
+
+RingBufferReader::RingBufferReader(RingBuffer* owner, const void* ptr, UINT32 size)
+    : m_owner(owner)
+    , m_ptr(ptr)
+    , m_size(size)
+{
+    ASSERT(IsValid(), "Ring Buffer Reader is invalid");
+}
+
+RingBufferReader::~RingBufferReader()
+{
+    if (IsValid())
+    {
+        m_owner->CommitRead(*this);
+    }
+}
+
+RingBufferReader::RingBufferReader(RingBufferReader&& other) noexcept
+    : m_owner(other.m_owner)
+    , m_ptr(other.m_ptr)
+    , m_size(other.m_size)
+{
+    ASSERT(IsValid(), "Reader is invalid");
+    other.Clear();
+}
+
+RingBufferReader& RingBufferReader::operator=(RingBufferReader&& other) noexcept
+{
+    ASSERT(other.IsValid(), "Reader is invalid");
+    ASSERT(m_owner == other.m_owner, "Cannot move reader from different buffer");
+    m_owner = other.m_owner;
+    m_ptr = other.m_ptr;
+    m_size = other.m_size;
+    other.Clear();
+    return *this;
+}
+
+bool RingBufferReader::IsValid() const
+{
+    return (nullptr != m_owner) && (nullptr != m_ptr) && (0 < m_size);
+}
+
+void RingBufferReader::Commit(UINT32 readSize /*= 0*/)
+{
+    ASSERT(IsValid(), "Reader is invalid");
+    m_owner->CommitRead(*this, readSize);
+    Clear();
+}
+
+void RingBufferReader::GiveUp()
+{
+    ASSERT(IsValid(), "Reader is invalid");
+    m_owner->GiveUpReader(*this);
+    Clear();
+}
+
+void RingBufferReader::Clear()
+{
+    m_owner = nullptr;
+    m_ptr = nullptr;
+    m_size = 0;
+}
+
+
+/*-------------------------------------
+  RingBufferWriter
+-------------------------------------*/
+
+RingBufferWriter::RingBufferWriter()
+    : m_owner(nullptr)
+    , m_ptr(nullptr)
+    , m_size(0)
+{
+}
+
+RingBufferWriter::RingBufferWriter(RingBuffer* owner, void* ptr, UINT32 size)
+    : m_owner(owner)
+    , m_ptr(ptr)
+    , m_size(size)
+{
+    ASSERT(IsValid(), "Ring Buffer Writer is invalid");
+}
+
+RingBufferWriter::~RingBufferWriter()
+{
+    if (IsValid())
+    {
+        Commit();
+    }
+}
+
+RingBufferWriter::RingBufferWriter(RingBufferWriter&& other) noexcept
+    : m_owner(other.m_owner)
+    , m_ptr(other.m_ptr)
+    , m_size(other.m_size)
+{
+    ASSERT(IsValid(), "Writer is invalid");
+    other.Clear();
+}
+
+RingBufferWriter& RingBufferWriter::operator=(RingBufferWriter&& other) noexcept
+{
+    ASSERT(other.IsValid(), "Writer is invalid");
+    ASSERT(m_owner == other.m_owner, "Cannot move writer from different buffer");
+    m_owner = other.m_owner;
+    m_ptr = other.m_ptr;
+    m_size = other.m_size;
+    other.Clear();
+    return *this;
+}
+
+
+bool RingBufferWriter::IsValid() const
+{
+    return (nullptr != m_owner) && (nullptr != m_ptr) && (0 < m_size);
+}
+
+void RingBufferWriter::Commit(UINT32 writeSize /* = 0*/)
+{
+    ASSERT(IsValid(), "Writer is invalid");
+    m_owner->CommitWrite(*this, writeSize);
+    Clear();
+}
+
+void RingBufferWriter::GiveUp()
+{
+    ASSERT(IsValid(), "Writer is invalid");
+    m_owner->GiveUpWriter(*this);
+    Clear();
+}
+
+void RingBufferWriter::Clear()
+{
+    m_owner = nullptr;
+    m_ptr = nullptr;
+    m_size = 0;
+}
+
+
+/*-------------------------------------
+  RingBuffer
+-------------------------------------*/
+
 RingBuffer::RingBuffer()
     : m_isActiveWriter(false)
     , m_isActiveReader(false)
