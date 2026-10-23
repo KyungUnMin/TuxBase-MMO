@@ -1,9 +1,12 @@
 #pragma once
-#include "Boost/BoostSession.h"
 #include "EngineCommon/NetEngine.h"
 
 class PacketDispatcher;
+class BoostSession;
 
+/*-------------------------------------
+  BoostNetEngine
+-------------------------------------*/
 class BoostNetEngine : public NetEngine
 {
     using IoContext = boost::asio::io_context;
@@ -29,4 +32,64 @@ private:
 private:
     IoContext m_ioContext;
     WorkGuard m_workGuard;
+};
+
+/*-------------------------------------
+  BoostNetEngineServer
+-------------------------------------*/
+class BoostNetEngineServer : public BoostNetEngine
+{
+    using Acceptor = boost::asio::ip::tcp::acceptor;
+    using ErrorCode = boost::system::error_code;
+    using BoostTimer = boost::asio::steady_timer;
+
+public:
+    BoostNetEngineServer() = delete;
+    BoostNetEngineServer(UINT16 port, UINT32 ioThreadCount, UINT32 sessionCount);
+    ~BoostNetEngineServer() override;
+
+    BoostNetEngineServer(const BoostNetEngineServer&) = delete;
+    BoostNetEngineServer(BoostNetEngineServer&&) = delete;
+    BoostNetEngineServer& operator=(const BoostNetEngineServer&) = delete;
+    BoostNetEngineServer& operator=(BoostNetEngineServer&&) = delete;
+
+private:
+    void Accept();
+    void RetryAccept();
+    void CompleteAccept(BoostSession* session, const ErrorCode& errorCode);
+
+private:
+    const UINT16 m_port;
+    Acceptor m_accepter;
+    BoostTimer m_acceptRetryTimer;
+};
+
+/*-------------------------------------
+  BoostNetEngineClient
+-------------------------------------*/
+
+class BoostNetEngineClient : public BoostNetEngine
+{
+    using Endpoint = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
+    using BoostTimer = boost::asio::steady_timer;
+
+public:
+    BoostNetEngineClient() = delete;
+    BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 sessionCount = 1, UINT32 threadCount = 1);
+    ~BoostNetEngineClient() override;
+
+    BoostNetEngineClient(const BoostNetEngineClient&) = delete;
+    BoostNetEngineClient(BoostNetEngineClient&&) = delete;
+    BoostNetEngineClient& operator=(const BoostNetEngineClient&) = delete;
+    BoostNetEngineClient& operator=(BoostNetEngineClient&&) = delete;
+
+private:
+    void Connect(BoostSession* session);
+    void CompleteConnect(BoostSession* session, const ErrorCode& errorCode);
+    void RetryConnect(BoostSession* session);
+
+private:
+    Endpoint m_endpoint;
+    BoostTimer m_connectRetryTimer;
 };
