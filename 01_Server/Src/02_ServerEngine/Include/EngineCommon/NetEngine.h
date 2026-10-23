@@ -43,7 +43,6 @@ protected:
     void Stop() final;
     virtual void RunThreadWorker() = 0;
 
-    bool CreateSessions(UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory);
     void AddStartEvent(Delegate<void()>::Callback&& event);
     void AddStopEvent(Delegate<void()>::Callback&& event);
 

@@ -1,13 +1,12 @@
 #include "Boost/BoostSession.h"
 #include "EngineCommon/Packet.h"
 
-// BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
-//     : m_socket(boost::asio::make_strand(ioContext))
-//     , m_netEngine(netEngine)
-//     , m_recvBuffer(kRecvBufferSize, PacketHeader::kMaxPacketSize)
-//     , m_isSending(false)
-// {
-// }
+BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
+    : m_socket(boost::asio::make_strand(ioContext))
+    , m_netEngine(netEngine)
+    , m_isSending(false)
+{
+}
 
 void BoostSession::Start()
 {

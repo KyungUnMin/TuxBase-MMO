@@ -8,10 +8,11 @@ class BoostNetEngine : public NetEngine
 {
     using IoContext = boost::asio::io_context;
     using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
+    using BoostSessionFactory = Factory<ISession, BoostSession, BoostNetEngine&, IoContext&>;
 
 public:
     BoostNetEngine() = delete;
-    BoostNetEngine(UINT32 threadCount, UINT32 sessionCount);
+    BoostNetEngine(UINT32 ioThreadCount, UINT32 sessionCount);
     virtual ~BoostNetEngine();
 
     BoostNetEngine(const BoostNetEngine&) = delete;
@@ -20,7 +21,6 @@ public:
     BoostNetEngine& operator=(BoostNetEngine&&) = delete;
 
 protected:
-    void Init() override;
     IoContext& GetIoContext() { return m_ioContext; }
 
 private:

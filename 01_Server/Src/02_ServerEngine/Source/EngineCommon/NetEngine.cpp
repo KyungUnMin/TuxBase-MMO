@@ -1,5 +1,4 @@
 #include "EngineCommon/NetEngine.h"
-#include "Verify/Assert.h"
 
 NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory)
     : m_isRun(false)
@@ -28,10 +27,11 @@ void NetEngine::Start()
         session = m_sessionFactory->Create();
         if (nullptr == session)
         {
-            CRASH("Session is null");
+            // CRASH("Session is null");
             return;
         }
     }
+    m_sessionFactory = nullptr;
 
     m_isRun.store(true);
     m_startDelegator.Invoke();
@@ -45,23 +45,6 @@ void NetEngine::Stop()
         return;
 
     m_stopDelegator.Invoke();
-}
-
-bool NetEngine::CreateSessions(UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory)
-{
-    ASSERT(0 < sessionCount, "sessionCount is zero");
-    ASSERT(nullptr != sessionFactory, "Session factory is null");
-    m_sessions.resize(sessionCount, nullptr);
-    for (SPtr<ISession>& session : m_sessions)
-    {
-        session = sessionFactory->Create();
-        if (nullptr == session)
-        {
-            CRASH("Session is null");
-            return false;
-        }
-    }
-    return true;
 }
 
 void NetEngine::AddStartEvent(Delegate<void()>::Callback&& event)

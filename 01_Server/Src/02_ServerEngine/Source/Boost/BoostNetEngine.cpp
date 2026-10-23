@@ -2,11 +2,8 @@
 #include "DataStruct/Factory.h"
 #include "Boost/BoostSession.h"
 
-// using BoostSessionFactory = Factory<ISession, BoostSession>;
-// sessionCount, std::make_unique<BoostSessionFactory>()
-
-BoostNetEngine::BoostNetEngine(UINT32 threadCount, UINT32 sessionCount)
-    : NetEngine(threadCount)
+BoostNetEngine::BoostNetEngine(UINT32 ioThreadCount, UINT32 sessionCount)
+    : NetEngine(ioThreadCount, sessionCount, std::make_unique<BoostSessionFactory>(*this, m_ioContext))
     , m_workGuard(boost::asio::make_work_guard(m_ioContext))
 {
 }
@@ -21,11 +18,6 @@ void BoostNetEngine::RunThreadWorker()
     {
         m_ioContext.run();
     }
-}
-
-void BoostNetEngine::Init()
-{
-    // CreateSessions()
 }
 
 // void BoostNetEngine::Stop()

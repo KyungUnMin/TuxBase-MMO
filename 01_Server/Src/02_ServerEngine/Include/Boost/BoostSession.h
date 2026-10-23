@@ -16,9 +16,9 @@ public:
     static constexpr UINT32 kRecvBufferSize = PacketHeader::kMaxPacketSize * 2;
     static constexpr UINT32 kMaxSendQueueSize = 1024;
 
-    BoostSession() = default;
-    // BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
-    ~BoostSession() = default;
+    BoostSession() = delete;
+    BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
+    ~BoostSession() override = default;
 
     BoostSession(const BoostSession&) = delete;
     BoostSession(BoostSession&&) = delete;
@@ -42,6 +42,7 @@ private:
 
 private:
     Socket m_socket;
+    BoostNetEngine& m_netEngine;
     // RecvBuffer m_recvBuffer;
 
     std::mutex m_sendMutex;

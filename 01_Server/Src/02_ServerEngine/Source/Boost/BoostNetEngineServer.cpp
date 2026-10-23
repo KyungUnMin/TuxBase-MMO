@@ -1,7 +1,7 @@
 #include "Boost/BoostNetEngineServer.h"
 
-BoostNetEngineServer::BoostNetEngineServer(UINT16 port, UINT32 sessionCount, UINT32 threadCount /*=1*/)
-    : BoostNetEngine(sessionCount, threadCount)
+BoostNetEngineServer::BoostNetEngineServer(UINT16 port, UINT32 ioThreadCount, UINT32 sessionCount)
+    : BoostNetEngine(ioThreadCount, sessionCount)
     , m_port(port)
     , m_accepter(GetIoContext())
     , m_acceptRetryTimer(GetIoContext())
@@ -29,11 +29,11 @@ void BoostNetEngineServer::Accept()
         return;
 
     BoostSession* session = nullptr;
-    if (false == TryPopSession(session))
-    {
-        RetryAccept();
-        return;
-    }
+    // if (false == TryPopSession(session))
+    // {
+    //     RetryAccept();
+    //     return;
+    // }
 
     m_accepter.async_accept(session->GetSocket(), [this, session](const ErrorCode& errorCode)
     {
@@ -59,22 +59,22 @@ void BoostNetEngineServer::RetryAccept()
 
 void BoostNetEngineServer::CompleteAccept(BoostSession* session, const ErrorCode& errorCode)
 {
-    if (false == IsRunning())
-    {
-        PushSession(session);
-        return;
-    }
+    // if (false == IsRunning())
+    // {
+    //     PushSession(session);
+    //     return;
+    // }
 
-    if (errorCode)
-    {
-        PushSession(session);
-        if (errorCode != boost::asio::error::operation_aborted)
-        {
-            // TODO : LOG_ERROR("Accept error: {}", errorCode.message());
-            Accept();
-        }
-        return;
-    }
+    // if (errorCode)
+    // {
+    //     PushSession(session);
+    //     if (errorCode != boost::asio::error::operation_aborted)
+    //     {
+    //         // TODO : LOG_ERROR("Accept error: {}", errorCode.message());
+    //         Accept();
+    //     }
+    //     return;
+    // }
 
     session->Start();
     Accept();

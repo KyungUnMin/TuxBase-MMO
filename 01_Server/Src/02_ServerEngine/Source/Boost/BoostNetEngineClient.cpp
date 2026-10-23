@@ -1,7 +1,7 @@
 #include "Boost/BoostNetEngineClient.h"
 
-BoostNetEngineClient::BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 sessionCount /*= 1*/, UINT32 threadCount /*= 1*/)
-    : BoostNetEngine(sessionCount, threadCount)
+BoostNetEngineClient::BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 ioThreadCount, UINT32 sessionCount)
+    : BoostNetEngine(ioThreadCount, sessionCount)
     , m_connectRetryTimer(GetIoContext())
 {
     boost::system::error_code errorCode;
@@ -50,7 +50,7 @@ void BoostNetEngineClient::CompleteConnect(BoostSession* session, const ErrorCod
     ASSERT(session, "session is null");
     if (false == IsRunning())
     {
-        PushSession(session);
+        // PushSession(session);
         return;
     }
 
@@ -58,7 +58,7 @@ void BoostNetEngineClient::CompleteConnect(BoostSession* session, const ErrorCod
     {
         if (errorCode == boost::asio::error::operation_aborted)
         {
-            PushSession(session);
+            // PushSession(session);
         }
         else
         {

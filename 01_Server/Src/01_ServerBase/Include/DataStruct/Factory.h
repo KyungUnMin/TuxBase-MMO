@@ -1,6 +1,7 @@
 #pragma once
 
-template <typename Base, typename... Args>
+#include <tuple>
+template <typename Base>
 class IFactory
 {
 public:
@@ -11,22 +12,31 @@ public:
     IFactory& operator=(const IFactory&) = delete;
     IFactory& operator=(IFactory&&) = delete;
 
-    virtual SPtr<Base> Create(Args... args) = 0;
+    virtual SPtr<Base> Create() = 0;
 };
 
 template <typename Base, typename Derived, typename... Args>
-class Factory : public IFactory<Base, Args...>
+class Factory : public IFactory<Base>
 {
 public:
-    Factory() = default;
+    explicit Factory(Args... args)
+        : m_args(std::forward<Args>(args)...)
+    {
+    }
     ~Factory() override = default;
     Factory(const Factory&) = delete;
     Factory(Factory&&) = delete;
     Factory& operator=(const Factory&) = delete;
     Factory& operator=(Factory&&) = delete;
 
-    SPtr<Base> Create(Args... args) override
+    SPtr<Base> Create() override
     {
-        return std::make_shared<Derived>(std::forward<Args>(args)...);
+        return std::apply([](Args... args)
+        {
+            return std::make_shared<Derived>(args...);
+        }, m_args);
     }
+
+private:
+    std::tuple<Args...> m_args;
 };
