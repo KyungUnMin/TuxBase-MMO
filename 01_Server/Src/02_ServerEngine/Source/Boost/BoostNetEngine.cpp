@@ -6,7 +6,7 @@
 -------------------------------------*/
 
 BoostNetEngine::BoostNetEngine(UINT32 ioThreadCount, UINT32 sessionCount)
-    : NetEngine(ioThreadCount, sessionCount, std::make_unique<BoostSessionFactory>(*this, m_ioContext))
+    : NetEngine(ioThreadCount, sessionCount, std::make_unique<BoostSessionFactory>(std::static_pointer_cast<BoostNetEngine>(shared_from_this()), m_ioContext))
     , m_workGuard(boost::asio::make_work_guard(m_ioContext))
 {
     AddStopEvent(std::bind(&BoostNetEngine::StopEngineEvent, this));

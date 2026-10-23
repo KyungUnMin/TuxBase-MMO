@@ -24,8 +24,7 @@ int main()
     // });
 
 
-    BoostNetEngineServer netEngine(13000, 1024, 5);
-
+    SPtr<BoostNetEngineServer> netEngine = std::make_shared<BoostNetEngineServer>(13000, 1024, 5);
     while (true)
     {
         // if (0 == packetDispatcher.ProcessPackets(netEngine))

@@ -20,7 +20,7 @@ public:
     virtual bool Send(std::shared_ptr<const SendBuffer> sendBuffer) = 0;
 };
 
-class Session : public ISession
+class Session : public ISession, public std::enable_shared_from_this<Session>
 {
 public:
     Session() = default;

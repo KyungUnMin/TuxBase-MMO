@@ -21,7 +21,7 @@ public:
     static constexpr UINT32 kMaxSendQueueSize = 1024;
 
     BoostSession() = delete;
-    BoostSession(BoostNetEngine& netEngine, IoContext& ioContext);
+    BoostSession(const SPtr<BoostNetEngine>& netEngine, IoContext& ioContext);
     ~BoostSession() override = default;
 
     BoostSession(const BoostSession&) = delete;
@@ -46,7 +46,7 @@ private:
 
 private:
     Socket m_socket;
-    BoostNetEngine& m_netEngine;
+    SPtr<BoostNetEngine> m_netEngine;
     // RecvBuffer m_recvBuffer;
 
     std::mutex m_sendMutex;

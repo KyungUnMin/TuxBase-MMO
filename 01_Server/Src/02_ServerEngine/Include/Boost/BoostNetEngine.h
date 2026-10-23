@@ -11,7 +11,7 @@ class BoostNetEngine : public NetEngine
 {
     using IoContext = boost::asio::io_context;
     using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
-    using BoostSessionFactory = Factory<ISession, BoostSession, BoostNetEngine&, IoContext&>;
+    using BoostSessionFactory = Factory<ISession, BoostSession, SPtr<BoostNetEngine>, IoContext&>;
 
 public:
     BoostNetEngine() = delete;

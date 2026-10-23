@@ -1,12 +1,14 @@
 #include "Boost/BoostSession.h"
 #include "EngineCommon/Packet.h"
+#include "Verify/Assert.h"
 
-BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
+BoostSession::BoostSession(const SPtr<BoostNetEngine>& netEngine, IoContext& ioContext)
     : Session()
     , m_socket(ioContext)
-    , m_netEngine(netEngine)
+    , m_netEngine(std::move(netEngine))
     , m_isSending(false)
 {
+    ASSERT(m_netEngine, "NetEngine is null");
 }
 
 void BoostSession::Start()

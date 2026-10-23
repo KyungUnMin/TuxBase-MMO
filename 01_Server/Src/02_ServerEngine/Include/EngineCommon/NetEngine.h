@@ -7,7 +7,7 @@
 
 class ISession;
 
-class INetEngine
+class INetEngine : public std::enable_shared_from_this<INetEngine>
 {
 public:
     INetEngine() = default;
@@ -55,6 +55,6 @@ private:
     Delegate<void()> m_stopDelegator;
 
     std::vector<Thread> m_threads;
-    LockStack<SPtr<ISession>> m_sessions;
+    LockStack<SPtr<ISession>> m_sessionPool;
     PacketDispatcher m_packetDispatcher;
 };

@@ -8,7 +8,7 @@ NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFact
 
     ASSERT(0 < sessionCount, "SessionCount is zero");
     ASSERT(nullptr != sessionFactory, "sessionFactory is null");
-    m_sessions.Reserve(sessionCount);
+    m_sessionPool.Reserve(sessionCount);
     while (sessionCount--)
     {
         SPtr<ISession> session = sessionFactory->Create();
@@ -18,7 +18,7 @@ NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFact
             return;
         }
 
-        m_sessions.Push(session);
+        m_sessionPool.Push(session);
     }
 }
 
@@ -62,11 +62,11 @@ void NetEngine::AddStopEvent(Delegate<void()>::Callback&& event)
 SPtr<ISession> NetEngine::TakeSession()
 {
     SPtr<ISession> session = nullptr;
-    return m_sessions.TryPop(session) ? session : nullptr;
+    return m_sessionPool.TryPop(session) ? session : nullptr;
 }
 
 void NetEngine::ReleaseSession(SPtr<ISession>&& session)
 {
-    m_sessions.Push(session);
+    m_sessionPool.Push(session);
     session = nullptr;
 }
