@@ -24,8 +24,7 @@ public:
     void StopListening();
 
 private:
-    void
-    AcceptSession();
+    void AcceptSession();
     void CompleteAcception(SPtr<BoostSession> session, const ErrorCode& errorCode);
     void RetryAcception();
 
