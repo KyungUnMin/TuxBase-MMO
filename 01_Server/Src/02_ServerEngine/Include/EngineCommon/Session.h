@@ -1,5 +1,10 @@
 #pragma once
+
 class SendBuffer;
+
+/*-------------------------------------
+  Session
+-------------------------------------*/
 
 class ISession
 {

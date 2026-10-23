@@ -8,15 +8,17 @@ NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFact
 
     ASSERT(0 < sessionCount, "SessionCount is zero");
     ASSERT(nullptr != sessionFactory, "sessionFactory is null");
-    m_sessions.resize(sessionCount, nullptr);
-    for (SPtr<ISession>& session : m_sessions)
+    m_sessions.Reserve(sessionCount);
+    while (sessionCount--)
     {
-        session = sessionFactory->Create();
+        SPtr<ISession> session = sessionFactory->Create();
         if (nullptr == session)
         {
             // CRASH("Session is null");
             return;
         }
+
+        m_sessions.Push(session);
     }
 }
 
@@ -41,6 +43,11 @@ void NetEngine::Stop()
         return;
 
     m_stopDelegator.Invoke();
+
+    for (Thread& thread : m_threads)
+    {
+        thread.Join();
+    }
 }
 
 void NetEngine::AddStartEvent(Delegate<void()>::Callback&& event)
@@ -50,4 +57,10 @@ void NetEngine::AddStartEvent(Delegate<void()>::Callback&& event)
 void NetEngine::AddStopEvent(Delegate<void()>::Callback&& event)
 {
     m_stopDelegator.Subscribe(std::move(event));
+}
+
+SPtr<ISession> NetEngine::TakeSession()
+{
+    SPtr<ISession> session = nullptr;
+    return m_sessions.TryPop(session) ? session : nullptr;
 }

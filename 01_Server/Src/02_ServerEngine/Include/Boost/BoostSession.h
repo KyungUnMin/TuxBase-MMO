@@ -6,6 +6,10 @@
 
 class BoostNetEngine;
 
+/*-------------------------------------
+  BoostSession
+-------------------------------------*/
+
 class BoostSession : public Session
 {
     using Socket = boost::asio::ip::tcp::socket;

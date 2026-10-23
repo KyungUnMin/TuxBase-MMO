@@ -3,7 +3,7 @@
 #include "Threading/Thread.h"
 #include "DataStruct/Delegate.h"
 #include "DataStruct/Factory.h"
-#include "types.h"
+#include "DataStruct/LockStack.h"
 
 class ISession;
 
@@ -36,9 +36,11 @@ public:
     NetEngine& operator=(NetEngine&&) = delete;
 
     bool IsRunning() const { return m_isRun.load(); }
-    PacketDispatcher& GetDispatcher() { return m_packetDispatcher; }
+    // PacketDispatcher& GetDispatcher() { return m_packetDispatcher; }
 
 protected:
+    SPtr<ISession> TakeSession();
+
     void Start() final;
     void Stop() final;
     virtual void RunThreadWorker() = 0;
@@ -52,6 +54,6 @@ private:
     Delegate<void()> m_stopDelegator;
 
     std::vector<Thread> m_threads;
-    std::vector<SPtr<ISession>> m_sessions;
+    LockStack<SPtr<ISession>> m_sessions;
     PacketDispatcher m_packetDispatcher;
 };

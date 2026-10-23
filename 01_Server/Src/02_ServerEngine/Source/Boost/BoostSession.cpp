@@ -2,7 +2,8 @@
 #include "EngineCommon/Packet.h"
 
 BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
-    : m_socket(boost::asio::make_strand(ioContext))
+    : Session()
+    , m_socket(ioContext)
     , m_netEngine(netEngine)
     , m_isSending(false)
 {

@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineCommon/NetEngine.h"
+#include "BoostAcceptor.h"
 
-class PacketDispatcher;
 class BoostSession;
 
 /*-------------------------------------
@@ -16,18 +16,21 @@ class BoostNetEngine : public NetEngine
 public:
     BoostNetEngine() = delete;
     BoostNetEngine(UINT32 ioThreadCount, UINT32 sessionCount);
-    virtual ~BoostNetEngine();
+    ~BoostNetEngine() override;
 
     BoostNetEngine(const BoostNetEngine&) = delete;
     BoostNetEngine(BoostNetEngine&&) = delete;
     BoostNetEngine& operator=(const BoostNetEngine&) = delete;
     BoostNetEngine& operator=(BoostNetEngine&&) = delete;
 
+    SPtr<BoostSession> TakeBoostSession();
+
 protected:
     IoContext& GetIoContext() { return m_ioContext; }
 
 private:
     void RunThreadWorker() final;
+    void StopEngineEvent();
 
 private:
     IoContext m_ioContext;
@@ -39,13 +42,9 @@ private:
 -------------------------------------*/
 class BoostNetEngineServer : public BoostNetEngine
 {
-    using Acceptor = boost::asio::ip::tcp::acceptor;
-    using ErrorCode = boost::system::error_code;
-    using BoostTimer = boost::asio::steady_timer;
-
 public:
     BoostNetEngineServer() = delete;
-    BoostNetEngineServer(UINT16 port, UINT32 ioThreadCount, UINT32 sessionCount);
+    BoostNetEngineServer(UINT16 portNum, UINT32 ioThreadCount, UINT32 sessionCount);
     ~BoostNetEngineServer() override;
 
     BoostNetEngineServer(const BoostNetEngineServer&) = delete;
@@ -54,14 +53,11 @@ public:
     BoostNetEngineServer& operator=(BoostNetEngineServer&&) = delete;
 
 private:
-    void Accept();
-    void RetryAccept();
-    void CompleteAccept(BoostSession* session, const ErrorCode& errorCode);
+    void StartEngineEvent();
+    void StopEngineEvent();
 
 private:
-    const UINT16 m_port;
-    Acceptor m_accepter;
-    BoostTimer m_acceptRetryTimer;
+    BoostAcceptor m_acceptor;
 };
 
 /*-------------------------------------
