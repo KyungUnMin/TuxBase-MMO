@@ -38,9 +38,10 @@ public:
     bool IsRunning() const { return m_isRun.load(); }
     // PacketDispatcher& GetDispatcher() { return m_packetDispatcher; }
 
-protected:
     SPtr<ISession> TakeSession();
+    void ReleaseSession(SPtr<ISession>&& session);
 
+protected:
     void Start() final;
     void Stop() final;
     virtual void RunThreadWorker() = 0;

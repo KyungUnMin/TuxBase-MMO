@@ -44,17 +44,17 @@ void BoostAcceptor::AcceptSession()
     });
 }
 
-void BoostAcceptor::CompleteAcception(const SPtr<ISession>& session, const ErrorCode& errorCode)
+void BoostAcceptor::CompleteAcception(SPtr<BoostSession> session, const ErrorCode& errorCode)
 {
     if (false == m_netEngine.IsRunning())
     {
-        // PushSession(session);
+        m_netEngine.ReleaseSession(std::move(session));
         return;
     }
 
     if (errorCode)
     {
-        // PushSession(session);
+        m_netEngine.ReleaseSession(std::move(session));
         if (errorCode != boost::asio::error::operation_aborted)
         {
             // TODO : LOG_ERROR("Accept error: {}", errorCode.message());

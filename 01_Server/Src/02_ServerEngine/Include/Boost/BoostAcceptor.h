@@ -1,7 +1,7 @@
 #pragma once
 
 class BoostNetEngineServer;
-class ISession;
+class BoostSession;
 
 class BoostAcceptor
 {
@@ -26,7 +26,7 @@ public:
 private:
     void
     AcceptSession();
-    void CompleteAcception(const SPtr<ISession>& session, const ErrorCode& errorCode);
+    void CompleteAcception(SPtr<BoostSession> session, const ErrorCode& errorCode);
     void RetryAcception();
 
 private:

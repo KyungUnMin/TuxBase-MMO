@@ -64,3 +64,9 @@ SPtr<ISession> NetEngine::TakeSession()
     SPtr<ISession> session = nullptr;
     return m_sessions.TryPop(session) ? session : nullptr;
 }
+
+void NetEngine::ReleaseSession(SPtr<ISession>&& session)
+{
+    m_sessions.Push(session);
+    session = nullptr;
+}
