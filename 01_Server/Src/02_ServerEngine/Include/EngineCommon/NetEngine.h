@@ -52,7 +52,6 @@ private:
     Delegate<void()> m_stopDelegator;
 
     std::vector<Thread> m_threads;
-    UPtr<SessionFactory> m_sessionFactory;
     std::vector<SPtr<ISession>> m_sessions;
     PacketDispatcher m_packetDispatcher;
 };

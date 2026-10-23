@@ -1,5 +1,4 @@
 #include "Boost/BoostNetEngine.h"
-#include "DataStruct/Factory.h"
 #include "Boost/BoostSession.h"
 
 BoostNetEngine::BoostNetEngine(UINT32 ioThreadCount, UINT32 sessionCount)
