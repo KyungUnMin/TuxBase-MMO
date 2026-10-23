@@ -1,7 +1,7 @@
 #include "Boost/BoostNetEngineClient.h"
 
-BoostNetEngineClient::BoostNetEngineClient(PacketDispatcher& packetDispatcher, std::string_view host, UINT16 port, UINT32 sessionCount /*= 1*/, UINT32 threadCount /*= 1*/)
-    : BoostNetEngine(packetDispatcher, sessionCount, threadCount)
+BoostNetEngineClient::BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 ioThreadCount, UINT32 sessionCount)
+    : BoostNetEngine(ioThreadCount, sessionCount)
     , m_connectRetryTimer(GetIoContext())
 {
     boost::system::error_code errorCode;
@@ -23,15 +23,15 @@ BoostNetEngineClient::~BoostNetEngineClient()
     BoostNetEngine::Stop();
 }
 
-void BoostNetEngineClient::OnStart()
-{
-    BoostSession* session = nullptr;
-    while (TryPopSession(session))
-    {
-        ASSERT(session, "session is null");
-        Connect(session);
-    }
-}
+// void BoostNetEngineClient::OnStart()
+// {
+//     BoostSession* session = nullptr;
+//     while (TryPopSession(session))
+//     {
+//         ASSERT(session, "session is null");
+//         Connect(session);
+//     }
+// }
 
 void BoostNetEngineClient::Connect(BoostSession* session)
 {
@@ -50,7 +50,7 @@ void BoostNetEngineClient::CompleteConnect(BoostSession* session, const ErrorCod
     ASSERT(session, "session is null");
     if (false == IsRunning())
     {
-        PushSession(session);
+        // PushSession(session);
         return;
     }
 
@@ -58,7 +58,7 @@ void BoostNetEngineClient::CompleteConnect(BoostSession* session, const ErrorCod
     {
         if (errorCode == boost::asio::error::operation_aborted)
         {
-            PushSession(session);
+            // PushSession(session);
         }
         else
         {
@@ -88,7 +88,7 @@ void BoostNetEngineClient::RetryConnect(BoostSession* session)
     });
 }
 
-void BoostNetEngineClient::OnStop()
-{
-    m_connectRetryTimer.cancel();
-}
+// void BoostNetEngineClient::OnStop()
+// {
+//     m_connectRetryTimer.cancel();
+// }

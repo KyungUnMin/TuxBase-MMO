@@ -9,16 +9,13 @@ class BoostNetEngineServer : public BoostNetEngine
 
 public:
     BoostNetEngineServer() = delete;
-    BoostNetEngineServer(PacketDispatcher& packetDispatcher, UINT16 port, UINT32 sessionCount, UINT32 threadCount = 1);
+    BoostNetEngineServer(UINT16 port, UINT32 ioThreadCount, UINT32 sessionCount);
     ~BoostNetEngineServer() override;
 
     BoostNetEngineServer(const BoostNetEngineServer&) = delete;
     BoostNetEngineServer(BoostNetEngineServer&&) = delete;
     BoostNetEngineServer& operator=(const BoostNetEngineServer&) = delete;
     BoostNetEngineServer& operator=(BoostNetEngineServer&&) = delete;
-
-    void OnStart() override;
-    void OnStop() override;
 
 private:
     void Accept();

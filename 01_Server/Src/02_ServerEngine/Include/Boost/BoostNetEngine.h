@@ -1,19 +1,18 @@
 #pragma once
 #include "Boost/BoostSession.h"
-#include "DataStruct/LockStack.h"
-#include "Threading/Thread.h"
-#include "EngineInterface/INetEngine.h"
+#include "EngineCommon/NetEngine.h"
 
 class PacketDispatcher;
 
-class BoostNetEngine : public INetEngine
+class BoostNetEngine : public NetEngine
 {
     using IoContext = boost::asio::io_context;
     using WorkGuard = boost::asio::executor_work_guard<IoContext::executor_type>;
+    using BoostSessionFactory = Factory<ISession, BoostSession, BoostNetEngine&, IoContext&>;
 
 public:
     BoostNetEngine() = delete;
-    BoostNetEngine(PacketDispatcher& packetDispatcher, UINT32 sessionCount, UINT32 threadCount);
+    BoostNetEngine(UINT32 ioThreadCount, UINT32 sessionCount);
     virtual ~BoostNetEngine();
 
     BoostNetEngine(const BoostNetEngine&) = delete;
@@ -21,30 +20,13 @@ public:
     BoostNetEngine& operator=(const BoostNetEngine&) = delete;
     BoostNetEngine& operator=(BoostNetEngine&&) = delete;
 
-    void Start();
-    void Stop();
-    PacketDispatcher& GetPacketDispatcher() { return m_packetDispatcher; }
-    ISession* FindSession(UINT64 serialId) override
-    {
-        // TODO : 나중에 만들자~
-        return nullptr;
-    }
-
 protected:
-    virtual void OnStart() = 0;
-    virtual void OnStop() = 0;
-
     IoContext& GetIoContext() { return m_ioContext; }
-    bool IsRunning() const { return m_isRun.load(); }
-    void PushSession(BoostSession* session);
-    bool TryPopSession(BoostSession*& session);
 
 private:
-    PacketDispatcher& m_packetDispatcher;
-    std::atomic<bool> m_isRun;
-    std::vector<Thread> m_threads;
+    void RunThreadWorker() final;
+
+private:
     IoContext m_ioContext;
     WorkGuard m_workGuard;
-    std::vector<std::optional<BoostSession>> m_sessions;
-    LockStack<BoostSession*> m_sessionPool;
 };

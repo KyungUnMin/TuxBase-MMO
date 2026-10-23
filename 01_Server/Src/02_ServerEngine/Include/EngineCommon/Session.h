@@ -1,6 +1,4 @@
 #pragma once
-#include <memory>
-
 class SendBuffer;
 
 class ISession
@@ -15,4 +13,16 @@ public:
     ISession& operator=(ISession&&) = delete;
 
     virtual bool Send(std::shared_ptr<const SendBuffer> sendBuffer) = 0;
+};
+
+class Session : public ISession
+{
+public:
+    Session() = default;
+    ~Session() override = default;
+
+    Session(const Session&) = delete;
+    Session(Session&&) = delete;
+    Session& operator=(const Session&) = delete;
+    Session& operator=(Session&&) = delete;
 };

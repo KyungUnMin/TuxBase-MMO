@@ -1,14 +1,9 @@
 #include "Boost/BoostSession.h"
-#include "Boost/BoostNetEngine.h"
 #include "EngineCommon/Packet.h"
-#include "EngineCommon/PacketDispatcher.h"
-#include "EngineCommon/PacketSerializer.h"
-#include <iostream>
 
 BoostSession::BoostSession(BoostNetEngine& netEngine, IoContext& ioContext)
     : m_socket(boost::asio::make_strand(ioContext))
     , m_netEngine(netEngine)
-    , m_recvBuffer(kRecvBufferSize, PacketHeader::kMaxPacketSize)
     , m_isSending(false)
 {
 }
@@ -35,42 +30,42 @@ void BoostSession::CloseSocket()
 
 void BoostSession::Receive()
 {
-    const std::span<BYTE> writableSpan = m_recvBuffer.GetWritableSpan();
-    m_socket.async_read_some(boost::asio::buffer(writableSpan.data(), writableSpan.size()), [this](const ErrorCode& errorCode, std::size_t recvSize)
-    {
-        this->CompleteReceive(errorCode, recvSize);
-    });
+    // const std::span<BYTE> writableSpan = m_recvBuffer.GetWritableSpan();
+    // m_socket.async_read_some(boost::asio::buffer(writableSpan.data(), writableSpan.size()), [this](const ErrorCode& errorCode, std::size_t recvSize)
+    // {
+    //     this->CompleteReceive(errorCode, recvSize);
+    // });
 }
 
 void BoostSession::CompleteReceive(const ErrorCode& errorCode, std::size_t recvSize)
 {
-    if (errorCode)
-    {
-        // TODO : 세션 정리 후 풀 반납 (P0-3)
-        CloseSocket();
-        return;
-    }
+    // if (errorCode)
+    // {
+    //     // TODO : 세션 정리 후 풀 반납 (P0-3)
+    //     CloseSocket();
+    //     return;
+    // }
 
-    m_recvBuffer.CommitWrite(static_cast<UINT32>(recvSize));
-    if (false == ProcessRecvPackets())
-    {
-        // TODO : LOG_ERROR("Invalid packet")
-        CloseSocket();
-        return;
-    }
+    // m_recvBuffer.CommitWrite(static_cast<UINT32>(recvSize));
+    // if (false == ProcessRecvPackets())
+    // {
+    //     // TODO : LOG_ERROR("Invalid packet")
+    //     CloseSocket();
+    //     return;
+    // }
 
-    m_recvBuffer.Compact();
-    Receive();
+    // m_recvBuffer.Compact();
+    // Receive();
 }
 
 bool BoostSession::ProcessRecvPackets()
 {
-    PacketSerializer kumin_temp_pszer; // 임시.
-    while (UPtr<Packet> packet = kumin_temp_pszer.DeserializePacket(m_recvBuffer))
-    {
-        // packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
-        // packet을 엔진의 보관용 큐에 넣는다. 나중에 컨텐츠 스레드가 처리할 예정
-    }
+    // PacketSerializer kumin_temp_pszer; // 임시.
+    // while (UPtr<Packet> packet = kumin_temp_pszer.DeserializePacket(m_recvBuffer))
+    // {
+    //     // packetDispatcher.EnqueuePacket(Packet(kUnassignedSessionId, header, std::move(body)));
+    //     // packet을 엔진의 보관용 큐에 넣는다. 나중에 컨텐츠 스레드가 처리할 예정
+    // }
 
     return true;
 }

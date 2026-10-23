@@ -9,16 +9,13 @@ class BoostNetEngineClient : public BoostNetEngine
 
 public:
     BoostNetEngineClient() = delete;
-    BoostNetEngineClient(PacketDispatcher& packetDispatcher, std::string_view host, UINT16 port, UINT32 sessionCount = 1, UINT32 threadCount = 1);
+    BoostNetEngineClient(std::string_view host, UINT16 port, UINT32 sessionCount = 1, UINT32 threadCount = 1);
     ~BoostNetEngineClient() override;
 
     BoostNetEngineClient(const BoostNetEngineClient&) = delete;
     BoostNetEngineClient(BoostNetEngineClient&&) = delete;
     BoostNetEngineClient& operator=(const BoostNetEngineClient&) = delete;
     BoostNetEngineClient& operator=(BoostNetEngineClient&&) = delete;
-
-    void OnStart() override;
-    void OnStop() override;
 
 private:
     void Connect(BoostSession* session);
