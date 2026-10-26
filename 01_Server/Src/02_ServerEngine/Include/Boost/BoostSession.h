@@ -3,6 +3,7 @@
 #include "EngineCommon/Packet.h"
 #include "DataStruct/SendBuffer.h"
 #include "EngineCommon/Session.h"
+#include "DataStruct/Factory.h"
 
 class BoostNetEngine;
 
@@ -54,3 +55,11 @@ private:
     bool m_isSending;
     std::vector<std::shared_ptr<const SendBuffer>> m_sendingBuffers;
 };
+
+/*-------------------------------------
+  BoostSessionFactory
+  세션 ID 는 세션 풀을 소유한 NetEngine 이 Create() 호출 시점에 발급한다.
+-------------------------------------*/
+using IoContext = boost::asio::io_context;
+
+using BoostSessionFactory = Factory<ISession, BoostSession, CreateArgs<UINT32>, SPtr<BoostNetEngine>, IoContext&>;

@@ -12,15 +12,13 @@ NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFact
     m_sessionPool.Reserve(sessionCount);
     for (UINT32 i = 0; i < sessionCount; ++i)
     {
-        SPtr<ISession> session = sessionFactory->Create();
+        SPtr<ISession> session = sessionFactory->Create(i);
         if (nullptr == session)
         {
             // CRASH("Session is null");
             return;
         }
 
-        // session->SetID()
-        // session->Init() 근데 가능하면 생성자에서 넣고 싶음
         m_sessionPool.Push(session);
     }
 }

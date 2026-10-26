@@ -24,7 +24,7 @@ public:
 class NetEngine : public INetEngine
 {
 public:
-    using SessionFactory = IFactory<ISession>;
+    using SessionFactory = IFactory<ISession, UINT32>;
 
     NetEngine() = delete;
     NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory);
