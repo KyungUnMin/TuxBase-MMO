@@ -2,8 +2,8 @@
 #include "EngineCommon/Packet.h"
 #include "Verify/Assert.h"
 
-BoostSession::BoostSession(const SPtr<BoostNetEngine>& netEngine, IoContext& ioContext)
-    : Session()
+BoostSession::BoostSession(const SPtr<BoostNetEngine>& netEngine, IoContext& ioContext, UINT32 sessionID)
+    : Session(sessionID)
     , m_socket(ioContext)
     , m_netEngine(std::move(netEngine))
     , m_isSending(false)

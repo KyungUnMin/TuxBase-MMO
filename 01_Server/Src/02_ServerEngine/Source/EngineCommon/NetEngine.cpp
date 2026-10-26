@@ -3,13 +3,14 @@
 NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFactory>&& sessionFactory)
     : m_isRun(false)
     , m_threads(ioThreadCount)
+    , m_usingSessions(sessionCount)
 {
     ASSERT(0 < ioThreadCount, "IoThreadCount is zero");
 
     ASSERT(0 < sessionCount, "SessionCount is zero");
     ASSERT(nullptr != sessionFactory, "sessionFactory is null");
     m_sessionPool.Reserve(sessionCount);
-    while (sessionCount--)
+    for (UINT32 i = 0; i < sessionCount; ++i)
     {
         SPtr<ISession> session = sessionFactory->Create();
         if (nullptr == session)
@@ -18,6 +19,8 @@ NetEngine::NetEngine(UINT32 ioThreadCount, UINT32 sessionCount, UPtr<SessionFact
             return;
         }
 
+        // session->SetID()
+        // session->Init() 근데 가능하면 생성자에서 넣고 싶음
         m_sessionPool.Push(session);
     }
 }

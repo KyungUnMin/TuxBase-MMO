@@ -56,5 +56,6 @@ private:
 
     std::vector<Thread> m_threads;
     LockStack<SPtr<ISession>> m_sessionPool;
+    std::vector<std::atomic<SPtr<ISession>>> m_usingSessions;
     PacketDispatcher m_packetDispatcher;
 };

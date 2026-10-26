@@ -21,7 +21,7 @@ public:
     static constexpr UINT32 kMaxSendQueueSize = 1024;
 
     BoostSession() = delete;
-    BoostSession(const SPtr<BoostNetEngine>& netEngine, IoContext& ioContext);
+    BoostSession(const SPtr<BoostNetEngine>& netEngine, IoContext& ioContext, UINT32 sessionID);
     ~BoostSession() override = default;
 
     BoostSession(const BoostSession&) = delete;
