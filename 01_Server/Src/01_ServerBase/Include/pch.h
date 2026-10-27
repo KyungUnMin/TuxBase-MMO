@@ -13,6 +13,7 @@
 #include <functional>
 #include <atomic>
 #include <mutex>
+#include <tuple>
 
 // ─────────────────────────────────────────────
 // C++ 표준 라이브러리 — 컨테이너

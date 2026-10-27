@@ -1,15 +1,10 @@
 #pragma once
 
-#include <tuple>
+template <typename Signature>
+class IFactory;
 
-
-template <typename... Ts>
-struct CreateArgs
-{
-};
-
-template <typename Base, typename... CreateArgTypes>
-class IFactory
+template <typename Base, typename... RuntimeArgTypes>
+class IFactory<Base(RuntimeArgTypes...)>
 {
 public:
     IFactory() = default;
@@ -19,15 +14,15 @@ public:
     IFactory& operator=(const IFactory&) = delete;
     IFactory& operator=(IFactory&&) = delete;
 
-    virtual SPtr<Base> Create(CreateArgTypes... createArgs) = 0;
+    virtual SPtr<Base> Create(RuntimeArgTypes... runtimeArgs) = 0;
 };
 
 
-template <typename Base, typename Derived, typename CreateArgList, typename... FixedArgs>
+template <typename Signature, typename Derived, typename... FixedArgs>
 class Factory;
 
-template <typename Base, typename Derived, typename... CreateArgTypes, typename... FixedArgs>
-class Factory<Base, Derived, CreateArgs<CreateArgTypes...>, FixedArgs...> : public IFactory<Base, CreateArgTypes...>
+template <typename Base, typename... RuntimeArgTypes, typename Derived, typename... FixedArgs>
+class Factory<Base(RuntimeArgTypes...), Derived, FixedArgs...> : public IFactory<Base(RuntimeArgTypes...)>
 {
 public:
     explicit Factory(FixedArgs... fixedArgs)
@@ -40,11 +35,11 @@ public:
     Factory& operator=(const Factory&) = delete;
     Factory& operator=(Factory&&) = delete;
 
-    SPtr<Base> Create(CreateArgTypes... createArgs) override
+    SPtr<Base> Create(RuntimeArgTypes... runtimeArgs) override
     {
-        return std::apply([&createArgs...](FixedArgs... fixedArgs)
+        return std::apply([&runtimeArgs...](FixedArgs... fixedArgs)
         {
-            return std::make_shared<Derived>(fixedArgs..., createArgs...);
+            return std::make_shared<Derived>(fixedArgs..., runtimeArgs...);
         }, m_fixedArgs);
     }
 
